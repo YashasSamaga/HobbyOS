@@ -1,0 +1,9 @@
+#############################
+##Bochs x86 Emulator Script
+##
+##
+#############################
+megs: 32
+romimage: file=BIOS-bochs-latest 
+vgaromimage: file=VGABIOS-lgpl-latest 
+floppya: 1_44=a:, status=inserted 
