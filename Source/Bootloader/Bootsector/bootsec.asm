@@ -1,241 +1,298 @@
-;--------------------------------------------------------------------------------------
-;Copyright (C) Lindus Kernel
+;*****************************************************************************
+; Bootsector (first stage of bootloader)
 ;
-;Title:Bootsector
+; Last Updated: Jan 4th 2017
 ;
-;Description: Lindus Loader - Stage 1 Assembly Script.Starts 2nd Stage of the loader.
-;             Supports FAT12 Filesystem and loades
+; bootsec.asm
+;*****************************************************************************
+bits	16
+org	0
+
+; irrespective of whether there is executable code in the bootsector, the
+; jump code must always exist as some BIOSes and operating systems such as
+; Windows look for jmp 'like' code in the first few bytes.
+jmp main
+
+;*****************************************************************************
+; BIOS Parameter Block (BPB)
 ;
-;--------------------------------------------------------------------------------------
-bits	16					
+; BPB must begin from the 3rd byte of the bootsector.
+; The far jump done previously is 3 bytes long.
+;*****************************************************************************
+bpbOEM									DB "LINDUSOS"		; must be 8 bytes long
+bpbBytesPerSector  						DW 512
+bpbSectorsPerCluster 					DB 1
+bpbReservedSectors						DW 1
+bpbNumberOfFATs 						DB 2
+bpbRootEntries 							DW 224
+bpbTotalSectors 						DW 2880
+bpbMedia 								DB 0xF8
+bpbSectorsPerFAT 						DW 9
+bpbSectorsPerTrack 						DW 18
+bpbHeadsPerCylinder 					DW 2
+bpbHiddenSectors 						DD 0
+bpbTotalSectorsBig     					DD 0
+bsDriveNumber							DB 0
+bsUnused 								DB 0
+bsExtBootSignature 						DB 0x0029
+bsSerialNumber	        				DD 0xABCD
+bsVolumeLabel 	        				DB "LNDSOS FLPY" 	; must be 11 bytes long
+bsFileSystem 	        				DB "FAT12   "		; must be 8 bytes long
 
-org		0x0		
+;*****************************************************************************
+; Defines
+;*****************************************************************************
+%define rootDirectoryClusterByteOffset 	0x001A
+%define rootDirectoryFilenameLen 		0x000B
+%define rootDirectoryEntrySize 			0x0020
 
-start:	
-jmp	sector_main				
+%define rootDirectoryAddress			0x0200
+%define FATAddress						0x0200
+%define BTLSTG2SegmentAddress			0x0050 ; for segment register
 
-bpbBytesPerSector:  	dw 512
-bpbReservedSectors: 	DW 1
-bpbSectorsPerCluster: 	db 1
-bpbNumberOfFATs: 	DB 2
-bpbRootEntries: 	DW 224
-bpbTotalSectors: 	DW 2880
-bpbMedia: 		DB 0xf0  ;; 0xF1
-bpbSectorsPerFAT: 	DW 9
-bpbSectorsPerTrack: 	DW 18
-bpbHeadsPerCylinder: 	DW 2
-bpbTotalSectorsBig:     DD 0
-bsDriveNumber: 	        DB 0
+;*****************************************************************************
+; Data Declarations
+;*****************************************************************************
+absoluteSector 							DB 0x0000
+absoluteHead   							DB 0x0000
+absoluteTrack  							DB 0x0000
 
+rootDirectorySector  					DW 0x0000
 
-datasector  dw 0x0000
-cluster     dw 0x0000
-ImageName   db "LOADER  BIN"
-msgLoading  db 0x0D, 0x0A, "Loading BootLoader", 0x00
-msgCRLF     db 0x0D, 0x0A, 0x00
-msgProgress db ".", 0x00
-msgFailure  db 0x0D, 0x0A, "Bootstrap: Loader is missing or is damaged.", 0x0D, 0x0A, 0x00
+cluster     							DW 0x0000
+BTLSTG2_IMGNAME   						DB "BTLSTG2 BIN"
 
-absoluteSector db 0x00
-absoluteHead   db 0x00
-absoluteTrack  db 0x00
+msgLoadFailure  						DB 0x0D, "BTLSTG2.BIN is missing.", 0x0A, 0x00
+msgDiskFailure  						DB 0x0D, "Failed to read disk.", 0x0A, 0x00
+msgAwaitKeypress  						DB 0x0D, "Press any key to restart.", 0x0A, 0x00
 
-;--------------------------------------------------------------------------------------
+;*****************************************************************************
+; puts
+; Prints a string using BIOS interrupt 0x10
+;
+; DS:SI => address of the null-terminated string
+;*****************************************************************************
+puts:
+	lodsb
+	or		al, al
+	jz		.putsDone
+	mov		ah, 0x0E	; print character function
+	int		0x10
+	jmp		puts
+.putsDone:
+	ret
 
-printstring: 
-lodsb	
-or al, al 
-jz done 
-jmp print 
+;*****************************************************************************
+; awaitKeypressAndReboot
+; Sends await keypress message and waits for a keypress after which it reboots
+;*****************************************************************************
+awaitKeypressAndReboot:
+	mov si, msgAwaitKeypress
+	call puts
+		
+	mov ah, 0x01
+	mov ch, 00010000b
+	int 0x10
+		
+	; await keypress
+    mov     ah, 0x00
+    int     0x16			
+		
+	; cold reboot
+	xor ax, ax
+	mov WORD [0x00472], ax
+	jmp 0xFFFF:0x00   
 
-print: 
-mov ah,0Eh 
-int 10H	 
-jmp printstring 
+;*****************************************************************************
+; readSectors
+; Reads sectors from a disk using BIOS interrupt 0x13
+;
+; Reads at least one sector even if CX is zero
+;
+; CX => number of sectors to read
+; AX => where to read from (starting sector number)
+; ES:BX => destination address
+;*****************************************************************************
+readSectors:
+    .readSectors_nextSector:
+		mov di, 0x05 							; 5 trials
+	.readSectors_readSector:
+		push	ax
+		push    bx
+		push    cx
+		
+	; convert LBA to CHS
+		xor     dx, dx
+		div     WORD [bpbSectorsPerTrack]
+		inc     dl
+		mov     BYTE [absoluteSector], dl
+		xor     dx, dx
+		div     WORD [bpbHeadsPerCylinder]
+		mov     BYTE [absoluteHead], dl
+		mov     BYTE [absoluteTrack], al
+		
+		mov     ah, 0x02
+		mov     al, 0x01
+		mov     ch, BYTE [absoluteTrack]            ; track
+		mov     cl, BYTE [absoluteSector]           ; sector
+		mov     dh, BYTE [absoluteHead]             ; head
+		mov     dl, BYTE [bsDriveNumber]            ; drive
+		int     0x13 
+		jnc     .readSectors_readSectorDone			; attempt to read the next sector
+		
+	; failed to read the sector
+		xor     ax, ax
+		int     0x13
+		dec 	di
+		
+		pop     cx
+		pop     bx
+		pop     ax
+		jnz     .readSectors_readSector              ; attempt to read again
+		
+        mov     si, msgDiskFailure
+        call    puts		
+		call awaitKeypressAndReboot		
+		cli
+		hlt
+		
+    .readSectors_readSectorDone:
+		pop     cx
+		pop     bx
+		pop     ax
+		add		bx, WORD [bpbBytesPerSector]
+		inc     ax
+		loop    .readSectors_nextSector               
+		ret
 
-done:
-ret
+;*****************************************************************************
+; Bootloader Entry Point
+;*****************************************************************************
+main:
+	; bootsector is loaded at 0x7C00
+	; assembler has been told that the origin is zero, hence adjust the segment registers
+		cli
+		mov		ax, 0x07C0 
+		mov     ds, ax
+		mov     es, ax
 
-;--------------------------------------------------------------------------------------
+	; create the stack
+		mov     ax, 0x00
+		mov     ss, ax
+		mov     sp, 0x7C00 ; use the space below the bootsector
+		sti
+	
+	; clear the screen
+		mov     ax, 0x03 ; AH = 0x00, AL = 0x03
+		int     0x10		
+		 
+	; find size of root directory as number of sectors   
+		xor     cx, cx
+		xor     dx, dx
+		mov     ax, rootDirectoryEntrySize
+		mul     WORD [bpbRootEntries]	
+		div     WORD [bpbBytesPerSector]	
+		xchg ax, cx
+		
+	; find location of root directory
+		mov     al, BYTE [bpbNumberOfFATs]
+		mul     WORD [bpbSectorsPerFAT]
+		add     ax, WORD [bpbReservedSectors]
+		mov     WORD [rootDirectorySector], ax
+		add     WORD [rootDirectorySector], cx
+	
+	; obtain the root directory
+		mov     bx, rootDirectoryAddress
+		call    readSectors
 
-ClusterLBA:
-sub     ax, 0x0002                        
-xor     cx, cx
-mov     cl, BYTE [bpbSectorsPerCluster]     
-mul     cx
-add     ax, WORD [datasector]              
-ret
+	; search for stage 2 file in the root directory
+		mov     cx, WORD [bpbRootEntries]
+		mov     di, rootDirectoryAddress
+		
+	.checkFileName:
+		push    cx
+		mov     cx, rootDirectoryFilenameLen
+		mov     si, BTLSTG2_IMGNAME
+		push    di
+		repe	cmpsb
+		pop     di
+		je      .loadFAT
+		pop     cx
+		add     di, rootDirectoryEntrySize
+		loop    .checkFileName
+		
+	; failed to find the file
+		mov     si, msgLoadFailure
+        call    puts
+		call 	awaitKeypressAndReboot
+		cli
+		hlt
+		
+	; image found, load the image
+    .loadFAT:
+		mov     dx, WORD [di + rootDirectoryClusterByteOffset]
+		mov     WORD [cluster], dx
+          
+	; find the number of sectors used by FATs   
+		xor     ax, ax
+		mov     al, BYTE [bpbNumberOfFATs]
+		mul     WORD [bpbSectorsPerFAT]
+		mov     cx, ax
 
-;--------------------------------------------------------------------------------------
+	; find the location of FAT as sector number
+		mov     ax, WORD [bpbReservedSectors]
+          
+	; obtain a FAT
+		mov     bx, FATAddress
+		call    readSectors
 
-LBACHS:
-xor     dx, dx                              
-div     WORD [bpbSectorsPerTrack]        
-inc     dl                                  
-mov     BYTE [absoluteSector], dl
-xor     dx, dx                              
-div     WORD [bpbHeadsPerCylinder]          
-mov     BYTE [absoluteHead], dl
-mov     BYTE [absoluteTrack], al
-ret
+	; set image file load address
+        mov     ax, BTLSTG2SegmentAddress
+        mov     es, ax
+        mov     bx, 0x00
+        push    bx
 
-ReadSectors:
-     .MAIN
-          mov     di, 0x0005                         
-     .SECTORLOOP
-          push    ax
-          push    bx
-          push    cx
-          call    LBACHS                            
-          mov     ah, 0x02                            
-          mov     al, 0x01                            
-          mov     ch, BYTE [absoluteTrack]           
-          mov     cl, BYTE [absoluteSector]          
-          mov     dh, BYTE [absoluteHead]            
-          mov     dl, BYTE [bsDriveNumber]            
-          int     0x13                                
-          jnc     .SUCCESS                            
-          xor     ax, ax                              
-          int     0x13                                
-          dec     di                                  
-          pop     cx
-          pop     bx
-          pop     ax
-          jnz     .SECTORLOOP                         
-          int     0x18
-     .SUCCESS
-          mov     si, msgProgress
-          call    printstring
-          pop     cx
-          pop     bx
-          pop     ax
-          add     bx, WORD [bpbBytesPerSector]        
-          inc     ax                                  
-          loop    .MAIN                               
-          ret
-
-
-
-sector_main:
-
-cli					
-mov     ax, 0x07C0			
-mov     ds, ax
-mov     es, ax
-mov     fs, ax
-mov     gs, ax
-
-mov     ax, 0x0000			
-mov     ss, ax
-mov     sp, 0xFFFF
-sti					
-
-mov     si, msgLoading
-call    printstring
-
-LOAD_ROOT:
-          xor     cx, cx
-          xor     dx, dx
-          mov     ax, 0x0020                           
-          mul     WORD [bpbRootEntries]                
-          div     WORD [bpbBytesPerSector]             
-          xchg    ax, cx
-          mov     al, BYTE [bpbNumberOfFATs]            
-          mul     WORD [bpbSectorsPerFAT]               
-          add     ax, WORD [bpbReservedSectors]         
-          mov     WORD [datasector], ax                 
-          add     WORD [datasector], cx     
-          mov     bx, 0x0200                           
-          call    ReadSectors
-
-mov     cx, WORD [bpbRootEntries]            
-mov     di, 0x0200                            
-.LOOP:
-push    cx
-mov     cx, 0x000B                           
-mov     si, ImageName                         
-push    di
-rep  cmpsb                                         
-pop     di
-je      LOAD_FAT
-pop     cx
-add     di, 0x0020                           
-loop    .LOOP
-jmp     FAILURE
-
-LOAD_FAT:
-
-mov     dx, WORD [di + 0x001A]
-mov     WORD [cluster], dx                
-
-xor     ax, ax
-mov     al, BYTE [bpbNumberOfFATs]          
-mul     WORD [bpbSectorsPerFAT]          
-mov     cx, ax
-
-mov     ax, WORD [bpbReservedSectors]       
-
-mov     bx, 0x0200                          
-call    ReadSectors
-
-mov     ax, 0x0050
-mov     es, ax                           
-mov     bx, 0x0000                         
-push    bx
-
-LOAD_IMAGE:
-
-mov     ax, WORD [cluster]              
-pop     bx                                
-call    ClusterLBA                      
-xor     cx, cx
-mov     cl, BYTE [bpbSectorsPerCluster]     
-call    ReadSectors
-push    bx
-
-; compute next cluster
-
-mov     ax, WORD [cluster]                  
-mov     cx, ax                            
-mov     dx, ax                       
-shr     dx, 0x0001                          
-add     cx, dx                             
-mov     bx, 0x0200                        
-add     bx, cx                              
-mov     dx, WORD [bx]                     
-test    ax, 0x0001
-jnz     .ODD_CLUSTER
-
-.EVEN_CLUSTER:
-
-and     dx, 0000111111111111b              
-jmp     .DONE
-
-.ODD_CLUSTER:
-
-shr     dx, 0x0004                          
-
-.DONE:
-
-mov     WORD [cluster], dx                
-cmp     dx, 0x0FF0                
-jb      LOAD_IMAGE
-
-DONE:
-
-mov     si, msgCRLF
-call    printstring
-push    WORD 0x0050
-push    WORD 0x0000
-retf
-
-FAILURE:
-
-mov     si, msgFailure
-call    printstring
-mov     ah, 0x00
-int     0x16                             
-int     0x19                             
-
-times 510-($-$$) db 0
-dw 0xAA55
+    .readCluster:     
+		mov     ax, WORD [cluster]
+		pop     bx
+		
+	; convert cluster to LBA
+		sub     ax, 0x02
+		xor     cx, cx
+		mov     cl, BYTE [bpbSectorsPerCluster]
+		mul     cx
+		add     ax, WORD [rootDirectorySector]
+	
+		xor     cx, cx
+		mov     cl, BYTE [bpbSectorsPerCluster]
+		call    readSectors
+		push    bx
+          
+	; compute next cluster     
+		mov     ax, WORD [cluster]
+		mov     cx, ax
+		mov     dx, ax
+		shr     dx, 0x01
+		add     cx, dx					; each entry in FAT is 12 bits long, one byte is 8 bits. Therefore, 1.5 times cluster number gives byte position.
+		mov     bx, FATAddress
+		add     bx, cx
+		mov     dx, WORD [bx]
+		test    ax, 0x01
+		jnz     .oddCluster
+          
+    .evenCluster:     
+		and     dx, 0000111111111111b
+		jmp     .done
+         
+    .oddCluster:     
+		shr     dx, 0x0004
+       
+	.done:
+		mov     WORD [cluster], dx
+		cmp     dx, 0x0FF0
+		jb      .readCluster             
+	
+		jmp BTLSTG2SegmentAddress:0x00
+		
+TIMES 510-($-$$) DB 0
+DW 0xAA55
