@@ -11,30 +11,43 @@ jmp	main
 ;*****************************************************************************
 ; Includes
 ;*****************************************************************************
-%include "gdt.asm"			; Gdt routines
-%include "A20.asm"			; A20 enabling
-%include "Fat12.asm"			; FAT12 driver. Kinda :)
+%include "GDT.asm"
+%include "A20.asm"
+%include "FAT12.asm"
 
 ;*****************************************************************************
-; Data Declarations
+; Defines
 ;*****************************************************************************
+
+;-----------------------------------------------------------------------------
+;  START	  END		  SIZE			        PURPOSE
+;-----------------------------------------------------------------------------
+; 0x00000 	0x003FF 	1KB 			- Interrupt Vector Table
+; 0x00400 	0x004FF 	256 bytes 		- BIOS Data Area
+; 0x00500 	0x07BFF 	30 KB   	- FREE MEMORY
+; 0x07C00  	0x07DFF 	512 bytes 		- bootsector (this code)
+; 0x07E00 	0x7FFFF 	480.5 KB 		- FREE MEMORY
+; 0x80000	0x9FFFF		121 KB			- Extended BIOS Data Area
+; 0xA0000 	0xFFFFF		384 KB			- Video Memory, ROM Area
+
 %define IMAGE_PMODE_BASE 0x100000 ; protected mode location
-%define IMAGE_RMODE_BASE 0x3000 ; real mode location (temporary)
+%define IMAGE_RMODE_BASE 0x07E00 ; real mode location (temporary)
 
 ;*****************************************************************************
 ; Data Declarations
 ;*****************************************************************************
-ImageSize     db 0
-ImageName     db "KRNL    BIN"
+ImageSize     			DB 0
+ImageName     			DB "HAL     SYS"
 
-msgLoadFailure 			DB 0x0D, "KRNL.BIN is missing or corrupt.", 0x0A, 0x00
+msgFailure 				DB 0x0D, "Lindus couldn not start for the following reasons:", 0x0A, 0x00
+msgLoadFailure 			DB 0x0D, "Hardware Abstraction Layer (HAL.SYS) is missing or corrupt.", 0x0A, 0x00
 msgAwaitKeypress 		DB 0x0D, "Press any key to restart.", 0x0A, 0x00
 
 ;*****************************************************************************
 ; puts
 ; Prints a string using BIOS interrupt 0x10
 ;
-; DS:SI => address of the null-terminated string
+; Parameters: DS:SI => address of the null-terminated string
 ;*****************************************************************************
 puts:
 	lodsb
@@ -49,8 +62,15 @@ puts:
 ;*****************************************************************************
 ; awaitKeypressAndReboot
 ; Sends await keypress message and waits for a keypress after which it reboots
+;
+; Parameters: DS:SI => adress of the null-terminated error string
 ;*****************************************************************************
 awaitKeypressAndReboot:
+	push si
+	mov si, msgFailure
+	call puts
+	pop si
+	call puts
 	mov si, msgAwaitKeypress
 	call puts
 		
@@ -83,56 +103,58 @@ main:
 	mov	sp, 0x7C00 ; use the space below the bootsector
 	sti
 	
-	call LoadRoot
+	call FAT12_LoadRoot
 
 	mov	ebx, 0
     mov	bp, IMAGE_RMODE_BASE
 	mov	si, ImageName
-	call	LoadFile
+	call	FAT12_LoadFile
 	
 	mov	DWORD [ImageSize], ecx
 	cmp	ax, 0
-	je	EnterStage3
+	jne	fileNotFound
 	
-	mov		si, msgLoadFailure
-	call	puts
-	call 	awaitKeypressAndReboot
-	cli
-	hlt
-
-EnterStage3:
+	; Install GDT and enable A20 gate
 	call InstallGDT
 	call EnableA20
 	
+	; jump to protected mode
 	cli
 	mov	eax, cr0
 	or	eax, 1
 	mov	cr0, eax
 
+	; far jump to fix the code segment
 	jmp	CODE_DESC:Stage3
+	
+fileNotFound:
+	mov		si, msgLoadFailure
+	call 	awaitKeypressAndReboot
+	cli
+	hlt
 
-;******************************************************
-;	ENTRY POINT FOR STAGE 3
-;******************************************************
+;*****************************************************************************
+;	32bit protected mode entry
+;*****************************************************************************
 bits 32
 
 Stage3:
-	mov	ax, DATA_DESC	; set data segments to data selector (0x10)
+	mov	ax, DATA_DESC
 	mov	ds, ax
 	mov	ss, ax
 	mov	es, ax
-	mov	esp, 90000h		; stack begins from 90000h
+	mov	esp, 0x7FFFF
 
-  	mov	eax, dword [ImageSize]
-  	movzx	ebx, word [bpbBytesPerSector]
-  	mul	ebx
-  	mov	ebx, 4
-  	div	ebx
+  	mov		eax, DWORD [ImageSize]
+  	movzx	ebx, WORD [bpbBytesPerSector]
+  	mul		ebx
+  	mov		ebx, 4
+  	div		ebx
    	cld
    	mov    esi, IMAGE_RMODE_BASE
    	mov	edi, IMAGE_PMODE_BASE
    	mov	ecx, eax
-   	rep	movsd
+   	repe	movsd
 
 	jmp	CODE_DESC:IMAGE_PMODE_BASE
 

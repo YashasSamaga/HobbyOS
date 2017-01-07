@@ -23,7 +23,7 @@ msgA20EnableFailure DB "Fatal Error: BTLSGT2 failed to enable A20 gate.", 0x0A, 
 ; Returns: 0 in ax if the a20 line is disabled (memory wraps around)
 ;          1 in ax if the a20 line is enabled (memory does not wrap around)
 ;
-; Credits: http://wiki.osdev.org/A20_Line
+; Source: http://wiki.osdev.org/A20_Line
 ;*****************************************************************************
 statusA20:
 	cli
@@ -80,46 +80,54 @@ EnableA20:
 	or ax, ax
 	jnz EnableA20Done
 	
-; try enabling using BIOS interrupt
-	mov     ax, 0x2403                ;--- A20-Gate Support ---
+; check if BIOS supports A20 interrupts (INT 0x15)
+	mov     ax, 0x2403
 	int     0x15
-	jc      .EnableA20_KKbrd_Out                  ;INT 15h is not supported
+	jc      .EnableA20_KB_OutputPort        ; INT 0x015 is not supported
 	
 	cmp     ah, 0
-	jnz     .EnableA20_KKbrd_Out                  ;INT 15h is not supported
+	jnz     .EnableA20_KB_OutputPort       	; INT 0x15 is not supported
 	 
-	mov     ax, 0x2401                ;--- A20-Gate Activate ---
+; Try activating the A20 Gate
+	mov     ax, 0x2401                		
 	int     0x15
-	jc      .EnableA20_KKbrd_Out              ;couldn't activate the gate
+	jc      .EnableA20_KB_OutputPort     	; failed to activate the gate
 	cmp     ah, 0
-	jnz     .EnableA20_KKbrd_Out              ;couldn't activate the gate
+	jnz     .EnableA20_KB_OutputPort     	; failed to activate the gate
 
-.EnableA20_KKbrd_Out:
+.EnableA20_KB_OutputPort:
 ; try enabling using keyboard output port
 	cli
+	
+	; disable keyboard
     call    wait_input
     mov     al,0xAD
-	out     0x64,al		; disable keyboard
+	out     0x64,al		
 	call    wait_input
 
+	; tell controller to read output port
 	mov     al,0xD0
-	out     0x64,al		; tell controller to read output port
+	out     0x64,al		
 	call    wait_output
 
+	; get output port data and store it
 	in      al,0x60
-	push    eax		; get output port data and store it
+	push    eax		
 	call    wait_input
 
+	; tell controller to write output port
 	mov     al,0xD1
-	out     0x64,al		; tell controller to write output port
+	out     0x64,al		
 	call    wait_input
 
+	; set A20 bit and write to output port
 	pop     eax
-	or      al,2		; set bit 1 (enable a20)
-	out     0x60,al		; write out data back to the output port
+	or      al,2		
+	out     0x60,al
 
+	; enable keyboard
 	call    wait_input
-	mov     al,0xAE		; enable keyboard
+	mov     al,0xAE
 	out     0x64,al
 
 	call    wait_input
@@ -136,7 +144,7 @@ EnableA20:
 	or ax, ax
 	jnz EnableA20Done
 
-	; try using system port
+; try using system port
 	push	ax
 	mov	al, 2
 	out	0x92, al
@@ -148,7 +156,6 @@ EnableA20:
 
 ; all attempts to enable A20 gate failed
 	mov si, msgA20EnableFailure
-	call puts
 	call awaitKeypressAndReboot
 	cli
 	hlt

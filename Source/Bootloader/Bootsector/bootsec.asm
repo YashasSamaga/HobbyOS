@@ -40,6 +40,18 @@ bsFileSystem 	        				DB "FAT12   "		; must be 8 bytes long
 ;*****************************************************************************
 ; Defines
 ;*****************************************************************************
+
+;-----------------------------------------------------------------------------
+;  START	  END		  SIZE			        PURPOSE
+;-----------------------------------------------------------------------------
+; 0x00000 	0x003FF 	1KB 			- Interrupt Vector Table
+; 0x00400 	0x004FF 	256 bytes 		- BIOS Data Area
+; 0x00500 	0x07BFF 	almost 30 KB   	- FREE MEMORY
+; 0x07C00  	0x07DFF 	512 bytes 		- bootsector (this code)
+; 0x07E00 	0x7FFFF 	480.5 KB 		- FREE MEMORY
+; 0x80000	0x9FFFF		121 KB			- Extended BIOS Data Area
+; 0xA0000 	0xFFFFF		384 KB			- Video Memory, ROM Area
+
 %define rootDirectoryClusterByteOffset 	0x001A
 %define rootDirectoryFilenameLen 		0x000B
 %define rootDirectoryEntrySize 			0x0020
@@ -51,9 +63,9 @@ bsFileSystem 	        				DB "FAT12   "		; must be 8 bytes long
 ;*****************************************************************************
 ; Data Declarations
 ;*****************************************************************************
-absoluteSector 							DB 0x0000
-absoluteHead   							DB 0x0000
-absoluteTrack  							DB 0x0000
+CHSSector 								DB 0x0000
+CHSHead   								DB 0x0000
+CHSTrack  								DB 0x0000
 
 rootDirectorySector  					DW 0x0000
 
@@ -68,7 +80,7 @@ msgAwaitKeypress  						DB 0x0D, "Press any key to restart.", 0x0A, 0x00
 ; puts
 ; Prints a string using BIOS interrupt 0x10
 ;
-; DS:SI => address of the null-terminated string
+; Parameters: DS:SI => address of the null-terminated string
 ;*****************************************************************************
 puts:
 	lodsb
@@ -83,8 +95,11 @@ puts:
 ;*****************************************************************************
 ; awaitKeypressAndReboot
 ; Sends await keypress message and waits for a keypress after which it reboots
+;
+; Parameters: DS:SI => address of the null terminated error string
 ;*****************************************************************************
 awaitKeypressAndReboot:
+	call puts
 	mov si, msgAwaitKeypress
 	call puts
 		
@@ -107,9 +122,11 @@ awaitKeypressAndReboot:
 ;
 ; Reads at least one sector even if CX is zero
 ;
-; CX => number of sectors to read
-; AX => where to read from (starting sector number)
-; ES:BX => destination address
+; Parameters: CX => number of sectors to read
+; 			  AX => where to read from (starting sector number)
+; 			  ES:BX => destination address
+;
+; TO:DO reset drive trials
 ;*****************************************************************************
 readSectors:
     .readSectors_nextSector:
@@ -123,17 +140,17 @@ readSectors:
 		xor     dx, dx
 		div     WORD [bpbSectorsPerTrack]
 		inc     dl
-		mov     BYTE [absoluteSector], dl
+		mov     BYTE [CHSSector], dl
 		xor     dx, dx
 		div     WORD [bpbHeadsPerCylinder]
-		mov     BYTE [absoluteHead], dl
-		mov     BYTE [absoluteTrack], al
+		mov     BYTE [CHSHead], dl
+		mov     BYTE [CHSTrack], al
 		
 		mov     ah, 0x02
 		mov     al, 0x01
-		mov     ch, BYTE [absoluteTrack]            ; track
-		mov     cl, BYTE [absoluteSector]           ; sector
-		mov     dh, BYTE [absoluteHead]             ; head
+		mov     ch, BYTE [CHSTrack]            ; track
+		mov     cl, BYTE [CHSSector]           ; sector
+		mov     dh, BYTE [CHSHead]             ; head
 		mov     dl, BYTE [bsDriveNumber]            ; drive
 		int     0x13 
 		jnc     .readSectors_readSectorDone			; attempt to read the next sector
@@ -148,9 +165,8 @@ readSectors:
 		pop     ax
 		jnz     .readSectors_readSector              ; attempt to read again
 		
-        mov     si, msgDiskFailure
-        call    puts		
-		call awaitKeypressAndReboot		
+        mov     si, msgDiskFailure	
+		call 	awaitKeypressAndReboot		
 		cli
 		hlt
 		
@@ -206,6 +222,7 @@ main:
 	; search for stage 2 file in the root directory
 		mov     cx, WORD [bpbRootEntries]
 		mov     di, rootDirectoryAddress
+		cld
 		
 	.checkFileName:
 		push    cx
@@ -221,7 +238,6 @@ main:
 		
 	; failed to find the file
 		mov     si, msgLoadFailure
-        call    puts
 		call 	awaitKeypressAndReboot
 		cli
 		hlt
@@ -266,7 +282,7 @@ main:
 		call    readSectors
 		push    bx
           
-	; compute next cluster     
+	; get next cluster     
 		mov     ax, WORD [cluster]
 		mov     cx, ax
 		mov     dx, ax

@@ -6,230 +6,222 @@
 ;*****************************************************************************
 bits	16
 
+;*****************************************************************************
+; Includes
+;*****************************************************************************
 %include "Floppy16.asm"
 
+;*****************************************************************************
+; Defines
+;*****************************************************************************
 %define ROOT_OFFSET 0x2e00
 %define FAT_SEG 0x2c0
 %define ROOT_SEG 0x2e0
 
-;*******************************************
-; LoadRoot ()
-;	- Load Root Directory Table to 0x7e00
-;*******************************************
+;*****************************************************************************
+; Data Declarations
+;*****************************************************************************
+datasector  							DW 0x0000
+cluster     							DW 0x0000
 
-LoadRoot:
-
+;*****************************************************************************
+; FAT12_LoadRoot ()
+; Load Root Directory Table
+;*****************************************************************************
+FAT12_LoadRoot:
 	pusha							; store registers
 	push	es
 
-     ; compute size of root directory and store in "cx"
-     
-	xor     cx, cx						; clear registers
+    ; find size of root directory as number of sectors      
+	xor     cx, cx
  	xor     dx, dx
-	mov     ax, 32					; 32 byte directory entry
-	mul     WORD [bpbRootEntries]				; total size of directory
-	div     WORD [bpbBytesPerSector]			; sectors used by directory
-	xchg    ax, cx						; move into AX
+	mov     ax, 32
+	mul     WORD [bpbRootEntries]
+	div     WORD [bpbBytesPerSector]
+	xchg    ax, cx
 
-     ; compute location of root directory and store in "ax"
-     
-	mov     al, BYTE [bpbNumberOfFATs]			; number of FATs
-	mul     WORD [bpbSectorsPerFAT]				; sectors used by FATs
+    ; find location of root directory     
+	mov     al, BYTE [bpbNumberOfFATs]
+	mul     WORD [bpbSectorsPerFAT]
 	add     ax, WORD [bpbReservedSectors]
-	mov     WORD [datasector], ax				; base of root directory
+	mov     WORD [datasector], ax
 	add     WORD [datasector], cx
 
-     ; read root directory into 0x7e00
- 
+    ; obtain the root directory 
  	push	word ROOT_SEG
 	pop		es
-	mov     bx, 0								; copy root dir
-	call    readSectors							; read in directory table
+	mov     bx, 0					
+	call    readSectors
 	pop		es
-	popa										; restore registers and return
+	
+	popa
 	ret
 
-;*******************************************
-; LoadFAT ()
-;	- Loads FAT table to 0x7c00
+;*****************************************************************************
+; FAT12_LoadFAT ()
+; Loads FAT table
 ;
-;	Parm/ ES:DI => Root Directory Table
-;*******************************************
-
-LoadFAT:
-
-	pusha							; store registers
+; Parameters: ES:DI => Root Directory Table
+;*****************************************************************************
+FAT12_LoadFAT:
+	pusha
 	push	es
 
-     ; compute size of FAT and store in "cx"
-     
+    ; find the number of sectors used by FATs      
 	xor     ax, ax
-	mov     al, BYTE [bpbNumberOfFATs]			; number of FATs
-	mul     WORD [bpbSectorsPerFAT]				; sectors used by FATs
+	mov     al, BYTE [bpbNumberOfFATs]
+	mul     WORD [bpbSectorsPerFAT]
 	mov     cx, ax
 
-     ; compute location of FAT and store in "ax"
-
+    ; find the location of FAT as sector number
 	mov     ax, WORD [bpbReservedSectors]
 
-     ; read FAT into memory (Overwrite our bootloader at 0x7c00)
-
+    ; obtain the FAT
 	push	word FAT_SEG
 	pop		es
 	xor		bx, bx
 	call    readSectors
 	pop		es
-	popa							; restore registers and return
+	
+	popa
 	ret
 	
-;*******************************************
-; FindFile ()
-;	- Search for filename in root table
+;*****************************************************************************
+; FAT12_FindFile ()
+; Search for filename in root table
 ;
-; parm/ DS:SI => File name
-; ret/ AX => File index number in directory table. -1 if error
-;*******************************************
-
-FindFile:
-
-	push	cx						; store registers
+; Parameters: DS:SI => File name
+; Returns: AX => file index number in directory table. 
+;   	   AX => -1 if error
+;*****************************************************************************
+FAT12_FindFile:
+	push	cx
 	push	dx
 	push	bx
-	mov	bx, si						; copy filename for later
+	mov	bx, si
 
-     ; browse root directory for binary image
+    ; browse root directory for binary image
+	mov     cx, WORD [bpbRootEntries]
+	mov     di, ROOT_OFFSET
+	cld
 
-	mov     cx, WORD [bpbRootEntries]			; load loop counter
-	mov     di, ROOT_OFFSET						; locate first root entry at 1 MB mark
-	cld							; clear direction flag
-
-.LOOP:
+.FAT12_FindFile_fineNext:
 	push    cx
-	mov     cx, 11					; eleven character name. Image name is in SI
-	mov	si, bx						; image name is in BX
+	mov     cx, 11
+	mov	si, bx
  	push    di
-     repe  cmpsb							; test for entry match
+    repe  cmpsb
 	pop     di
-	je      .Found
+	je      .FAT12_FindFile_Found
 	pop     cx
-	add     di, 32					; queue next directory entry
-	loop    .LOOP
+	add     di, 32
+	loop    .FAT12_FindFile_fineNext
 
-.NotFound:
-	pop	bx						; restore registers and return
+; failed to find the file
+	pop	bx
 	pop	dx
 	pop	cx
-	mov	ax, -1						; set error code
+	mov	ax, -1
 	ret
 
-.Found:
-	pop	ax						; return value into AX contains entry of file
-	pop	bx						; restore registers and return
+.FAT12_FindFile_Found:
+	pop	ax
+	pop	bx
 	pop	dx
 	pop	cx
 	ret
 
-;*******************************************
-; LoadFile ()
-;	- Load file
-; parm/ ES:SI => File to load
-; parm/ EBX:BP => Buffer to load file to
-; ret/ AX => -1 on error, 0 on success
-; ret/ CX => number of sectors read
-;*******************************************
-
-LoadFile:
-
-	xor	ecx, ecx		; size of file in sectors
+;*****************************************************************************
+; FAT12_LoadFile ()
+; Loads file to memory
+;
+; Parameters: ES:SI => name of the file which must be loaded
+; 			  EBX:BP => where to load
+;
+; Returns: AX => -1 on error
+;		   AX => 0 on success
+; 		   CX => number of sectors read
+;*****************************************************************************
+FAT12_LoadFile:
+	xor	ecx, ecx
 	push	ecx
 
-.FIND_FILE:
-
-	push	bx			; BX=>BP points to buffer to write to; store it for later
+	push	bx
 	push	bp
-	call	FindFile		; find our file. ES:SI contains our filename
+	call	FAT12_FindFile
 	cmp	ax, -1
-	jne	.LOAD_IMAGE_PRE
+	jne	.FAT12_LoadFile_getStartingCluster
 	pop	bp
 	pop	bx
 	pop	ecx
 	mov	ax, -1
 	ret
 
-.LOAD_IMAGE_PRE:
-
+.FAT12_LoadFile_getStartingCluster:
 	sub	edi, ROOT_OFFSET
 	sub	eax, ROOT_OFFSET
 
 	; get starting cluster
-
-	push	word ROOT_SEG		;root segment loc
+	push	word ROOT_SEG
 	pop	es
-	mov	dx, WORD [es:di + 0x001A]; DI points to file entry in root directory table. Refrence the table...
-	mov	WORD [cluster], dx	; file's first cluster
-	pop	bx			; get location to write to so we dont screw up the stack
+	mov	dx, WORD [es:di + 0x001A]
+	mov	WORD [cluster], dx
+	pop	bx
 	pop	es
-	push    bx			; store location for later again
+	push    bx
 	push	es
-	call	LoadFAT
+	call	FAT12_LoadFAT
 
-.LOAD_IMAGE:
-
-	; load the cluster
-
-	mov	ax, WORD [cluster]	; cluster to read
-	pop	es			; bx:bp=es:bx
+.FAT12_LoadFile_readCluster:
+	mov	ax, WORD [cluster]
+	pop	es
 	pop	bx
 	
-	; Cluster to LBA
-	sub     ax, 0x0002                          ; zero base cluster number
+	; convert cluster to LBA
+	sub     ax, 0x0002
     xor     cx, cx
-    mov     cl, BYTE [bpbSectorsPerCluster]     ; convert byte to word
+    mov     cl, BYTE [bpbSectorsPerCluster]
     mul     cx
-    add     ax, WORD [datasector]               ; base data sector
+    add     ax, WORD [datasector]
 	
 	xor	cx, cx
 	mov     cl, BYTE [bpbSectorsPerCluster]
+	
 	call	readSectors
 	pop	ecx
-	inc	ecx			; add one more sector to counter
+	inc	ecx
 	push	ecx
 	push	bx
 	push	es
-	mov	ax, FAT_SEG		;start reading from fat
+	mov	ax, FAT_SEG
 	mov	es, ax
 	xor	bx, bx
 
 	; get next cluster
-
-	mov     ax, WORD [cluster]	; identify current cluster
-	mov     cx, ax			; copy current cluster
+	mov     ax, WORD [cluster]
+	mov     cx, ax
 	mov     dx, ax
-	shr     dx, 0x0001		; divide by two
-	add     cx, dx			; sum for (3/2)
+	shr     dx, 0x0001
+	add     cx, dx			; each entry in FAT is 12 bits long, one byte is 8 bits. Therefore, 1.5 times cluster number gives byte position.
 
-	mov	bx, 0			;location of fat in memory
+	mov	bx, 0			
 	add	bx, cx
 	mov	dx, WORD [es:bx]
-	test	ax, 0x0001		; test for odd or even cluster
-	jnz	.ODD_CLUSTER
+	test	ax, 0x0001
+	jnz	.oddCluster
 
-.EVEN_CLUSTER:
+.evenCluster:
+	and	dx, 0000111111111111b
+	jmp	.done
 
-	and	dx, 0000111111111111b	; take low 12 bits
-	jmp	.DONE
+.oddCluster:
+	shr	dx, 0x0004
 
-.ODD_CLUSTER:
-
-	shr	dx, 0x0004		; take high 12 bits
-
-.DONE:
-
+.done:
 	mov	WORD [cluster], dx
-	cmp	dx, 0x0ff0		; test for end of file marker
-	jb	.LOAD_IMAGE
+	cmp	dx, 0x0ff0			; EOF
+	jb	.FAT12_LoadFile_readCluster
 
-.SUCCESS:
 	pop	es
 	pop	bx
 	pop	ecx

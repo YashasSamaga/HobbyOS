@@ -29,14 +29,12 @@ bsSerialNumber	        				DD 0xABCD
 bsVolumeLabel 	        				DB "LNDSOS FLPY" 	; must be 11 bytes long
 bsFileSystem 	        				DB "FAT12   "		; must be 8 bytes long
 
-datasector  			dw 0x0000
-cluster     dw 0x0000
-
-absoluteSector db 0x00
-absoluteHead   db 0x00
-absoluteTrack  db 0x00
+CHSSector 								DB 0x00
+CHSHead   								DB 0x00
+CHSTrack  								DB 0x00
 
 msgDiskFailure  						DB 0x0D, "Failed to read disk.", 0x0A, 0x00
+
 ;*****************************************************************************
 ; readSectors
 ; Reads sectors from a disk using BIOS interrupt 0x13
@@ -59,17 +57,17 @@ readSectors:
 		xor     dx, dx
 		div     WORD [bpbSectorsPerTrack]
 		inc     dl
-		mov     BYTE [absoluteSector], dl
+		mov     BYTE [CHSSector], dl
 		xor     dx, dx
 		div     WORD [bpbHeadsPerCylinder]
-		mov     BYTE [absoluteHead], dl
-		mov     BYTE [absoluteTrack], al
+		mov     BYTE [CHSHead], dl
+		mov     BYTE [CHSTrack], al
 		
 		mov     ah, 0x02
 		mov     al, 0x01
-		mov     ch, BYTE [absoluteTrack]            ; track
-		mov     cl, BYTE [absoluteSector]           ; sector
-		mov     dh, BYTE [absoluteHead]             ; head
+		mov     ch, BYTE [CHSTrack]            ; track
+		mov     cl, BYTE [CHSSector]           ; sector
+		mov     dh, BYTE [CHSHead]             ; head
 		mov     dl, BYTE [bsDriveNumber]            ; drive
 		int     0x13 
 		jnc     .readSectors_readSectorDone			; attempt to read the next sector

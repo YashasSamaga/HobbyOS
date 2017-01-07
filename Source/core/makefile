@@ -1,0 +1,54 @@
+# 'make'        build executable file 'KRNL.BIN'
+# 'make clean'  removes all .o and executable files
+#
+
+# define the source and output files
+# CSOURCES = $(shell find -maxdepth 2 -name '*.c')
+# COBJECTS = $(patsubst %.c, %.o, $(CSOURCES))
+# ASMSOURCES = $(shell find -maxdepth 2 -name '*.asm')
+# ASMOBJECTS = $(patsubst %.asm, %.o, $(ASMSOURCES))
+
+# Hardware Abstraction Layer Configuration (architecture specifications)
+# The target architecture must be set in hal/make.config
+include hal/make.config
+
+#Kernel Configuration
+include kernel/make.config
+
+#Library Configuration
+include lib/make.config
+
+BUILDDIR = build
+EXECUTABLE = $(BUILDDIR)/KRNL.BIN
+
+LINKER = ld
+LDFLAGS = -T link.ld
+
+OBJECTS = $(HALDIR)/stub_entry.o $(HALDIR)/hal.o $(HALDIR)/textmode.o $(HALDIR)/io.o $(HALDIR)/cpu.o lib/string.o kernel/main.o
+# $(HALFILE) $(KERNELFILE) $(LIBFILE)
+#
+
+all: build_hal build_lib build_kernel link
+build_hal:
+	make -f hal/x86/makefile
+	
+build_lib:
+	make -f lib/makefile
+
+build_kernel:
+	make -f kernel/makefile
+	
+link:
+	$(LINKER) $(LDFLAGS) -o $(EXECUTABLE) $(OBJECTS)
+	
+clean:
+	#del lib\*.o
+	#del lib\*.a
+	
+	del hal\x86\*.o
+	del hal\*.a
+	
+	#del kernel\*.o
+	#del kernel\*.a
+	
+	del build\KRNL.bin
