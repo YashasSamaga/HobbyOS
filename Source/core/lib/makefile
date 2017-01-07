@@ -5,8 +5,8 @@
 include lib/make.config
 
 # library source files
-LIB_CSOURCES = lib/string.c
-LIB_COBJECTS = lib/string.o
+LIB_CSOURCES = lib/string.c lib/stdlib.c
+LIB_COBJECTS = lib/string.o lib/stdlib.o
 LIB_OBJECTS = $(LIB_COBJECTS)
 
 # define the compiler and linker to use
@@ -23,12 +23,12 @@ INCLUDES = -I./include
 .PHONY: all clean
 .SUFFIXES: .o .c
 
-all: $(LIB_OBJECTS) link
+all: $(LIB_OBJECTS) archive
 
 .c.o:
 	$(CC) $(CFLAGS) $(INCLUDES) -c -o $@ $<
 		
-link:
+archive:
 	$(AR) $(ARFLAGS) $(LIBFILE) $(LIB_OBJECTS)
  
 clean:

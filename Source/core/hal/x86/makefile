@@ -5,10 +5,10 @@
 include hal/make.config
 
 # HAL source files
-HAL_CSOURCES = $(HALDIR)/hal.c $(HALDIR)/textmode.c $(HALDIR)/io.c $(HALDIR)/cpu.c 
-HAL_COBJECTS = $(HALDIR)/hal.o $(HALDIR)/textmode.o $(HALDIR)/io.o $(HALDIR)/cpu.o
-HAL_ASMSOURCES = $(HALDIR)/stub_entry.asm
-HAL_ASMOBJECTS = $(HALDIR)/stub_entry.o
+HAL_CSOURCES = $(HALDIR)/hal.c $(HALDIR)/textmode.c $(HALDIR)/cpu/cpu.c $(HALDIR)/cpu/gdt.c $(HALDIR)/cpu/idt.c 
+HAL_COBJECTS = $(HALDIR)/hal.o $(HALDIR)/textmode.o $(HALDIR)/cpu/cpu.o $(HALDIR)/cpu/gdt.o $(HALDIR)/cpu/idt.o 
+HAL_ASMSOURCES = $(HALDIR)/init.asm
+HAL_ASMOBJECTS = $(HALDIR)/init.o
 HAL_OBJECTS = $(HAL_ASMOBJECTS) $(HAL_COBJECTS)
 
 # define the compiler, assembler and archiver to use
@@ -27,7 +27,7 @@ INCLUDES = -I./include
 .PHONY: all clean
 .SUFFIXES: .o .c .asm
 
-all: $(HAL_OBJECTS) link
+all: $(HAL_OBJECTS) archive
 
 .c.o:
 	$(CC) $(CFLAGS) $(INCLUDES) -c -o $@ $<
@@ -35,7 +35,7 @@ all: $(HAL_OBJECTS) link
 .asm.o:
 	$(ASMA) $(ASMFLAGS) -o $@ $<
 		
-link:
+archive:
 	$(AR) $(ARFLAGS) $(HALFILE) $(HAL_OBJECTS)
  
 clean:

@@ -1,4 +1,5 @@
 /******************************************************************************/
+//	Standard C Library
 //	size_t type declaration
 //
 //	size_t.h
@@ -9,16 +10,6 @@
 #ifndef __SIZE_T_H
 #define	__SIZE_T_H
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
-/* standard size_t type */
 typedef unsigned size_t;
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // __SIZE_T_H

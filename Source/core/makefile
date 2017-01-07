@@ -1,6 +1,6 @@
+# LindusOS Build script
 # 'make'        build executable file 'KRNL.BIN'
 # 'make clean'  removes all .o and executable files
-#
 
 # define the source and output files
 # CSOURCES = $(shell find -maxdepth 2 -name '*.c')
@@ -24,9 +24,8 @@ EXECUTABLE = $(BUILDDIR)/KRNL.BIN
 LINKER = ld
 LDFLAGS = -T link.ld
 
-OBJECTS = $(HALDIR)/stub_entry.o $(HALDIR)/hal.o $(HALDIR)/textmode.o $(HALDIR)/io.o $(HALDIR)/cpu.o lib/string.o kernel/main.o
-# $(HALFILE) $(KERNELFILE) $(LIBFILE)
-#
+OBJECTS = $(HALDIR)/init.o $(HALDIR)/hal.o $(HALDIR)/textmode.o $(HALDIR)/cpu/cpu.o $(HALDIR)/cpu/gdt.o $(HALDIR)/cpu/idt.o $(LIBFILE) kernel/main.o
+# $(HALFILE) $(KERNELFILE) 
 
 all: build_hal build_lib build_kernel link
 build_hal:
@@ -42,13 +41,14 @@ link:
 	$(LINKER) $(LDFLAGS) -o $(EXECUTABLE) $(OBJECTS)
 	
 clean:
-	#del lib\*.o
-	#del lib\*.a
+#del lib\*.o
+#del lib\*.a
 	
 	del hal\x86\*.o
+	del hal\x86\cpu\*.o
 	del hal\*.a
 	
-	#del kernel\*.o
-	#del kernel\*.a
+#del kernel\*.o
+#del kernel\*.a
 	
 	del build\KRNL.bin

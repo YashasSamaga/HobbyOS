@@ -1,18 +1,25 @@
-/******************************************************************************/
-//	Basic Text Mode Display Routines (TTY)
-//	Hardware Abstraction Layer x86
+/************************************************************************************************/
+//	Hardware Abstraction Layer (HAL)
+//	Basic textmode display functions (tty)
 //
 //	textmode.c
-//	Date: January 5th 2017
+//	This file contains 'bad' implementations of display functions for basic text output terminal 	
 //
-/******************************************************************************/
+//	Date: January 6th 2017
+//
+/************************************************************************************************/
+#include "hal.h"
+
+#include <hal.h>
 #include <stdarg.h>
 #include <string.h>
 #include <ctype.h>
+#include <stdlib.h>
+#include <stdint.h>
 
-#include "hal.h"
-#include <hal.h>
-
+/*==============================================================================================*/
+// Defines and Enumerations (Private)
+/*==============================================================================================*/
 #define VIDEO_MEMORY_COLOR 	0xB8000
 #define VIDEO_MEMORY_MONO 	0xB0000
 
@@ -21,13 +28,16 @@
 
 typedef enum textmode_types
 {
-	TEXTMODE_INVALID = 0x70,
-	TEXTMODE_UNKNOWN = 0x60,
+	TEXTMODE_INVALID = 0x70, // not standard
+	TEXTMODE_UNKNOWN = 0x60, // not standard
     TEXTMODE_NONE = 0x00,
     TEXTMODE_COLOUR = 0x20,
     TEXTMODE_MONOCHROME = 0x30,
 }textmode_types;
 
+/*==============================================================================================*/
+// Implementation Data (Private)
+/*==============================================================================================*/
 static uint16_t *vmemptr;
 
 static uint8_t curPos_x = 0, curPos_y = 0;
@@ -36,14 +46,20 @@ static uint8_t startX = 0, startY = 0;
 static uint8_t attribute = 0x0F;
 static textmode_types textmode_type = TEXTMODE_INVALID;
 
-
-void init_textmode()
+/*==============================================================================================*/
+// Implementation Functions (Private)
+/*==============================================================================================*/
+/*************************************************************************************************
+	<summary>init_textmode</summary>
+	<para>identifies the display mode/device and sets the video memory pointer appropriately</para>
+*************************************************************************************************/
+static void init_textmode()
 {
-    textmode_type = (*(volatile uint16_t*)0x410) & 0x30;
+    textmode_type = (*(volatile uint16_t*)0x410) & 0x30; // BIOS Data Area
     switch(textmode_type)
     {
 		case TEXTMODE_COLOUR: 
-			vmemptr = (uint16_t*)VIDEO_MEMORY_COLOR;			
+			vmemptr = (uint16_t*)VIDEO_MEMORY_COLOR;
 		break;
 		case TEXTMODE_MONOCHROME:
 			vmemptr = (uint16_t*)VIDEO_MEMORY_MONO;
@@ -56,23 +72,27 @@ void init_textmode()
     }
  }
  
-/* private functions do not need the textmode initilization and type checks */
-/* the functions calling these private functions will be having their own checks */
-/* 	
-	if(textmode_type == TEXTMODE_INVALID) init_textmode();
-	if(textmode_type != TEXTMODE_COLOUR && textmode_type != TEXTMODE_MONOCHROME) return; 
-*/
-void updatecursor()
+/*************************************************************************************************
+	<summary>updatecursor</summary>
+	<para>communicates with the display hardware and sets the blinking cursor position</para>
+*************************************************************************************************/
+static inline void updatecursor()
 {
 	unsigned int temp = curPos_y * TEXTMODE_MAX_X + curPos_x;
 
-    outportb(0x3D4, 14);
+    outportb(0x3D4, 0xE);
     outportb(0x3D5, temp >> 8);
-    outportb(0x3D4, 15);
+    outportb(0x3D4, 0xF);
     outportb(0x3D5, temp);
 }
 
-void putc(unsigned char c) 
+/*************************************************************************************************
+	<summary>putc</summary>
+	<para>prints a character on the screen</para>
+	<param name="c" type="unsigned char">the character that has to be printed</param>
+	<remarks>updates the cursor automatically</remarks>
+*************************************************************************************************/
+static void putc(unsigned char c) 
 {	
 	switch(c)
 	{
@@ -121,66 +141,13 @@ void putc(unsigned char c)
 	updatecursor();
 }
 
-char tbuf[32];
-char bchars[] = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
-
-void itoa(unsigned i, unsigned base, char *buf) 
-{
-   int pos = 0;
-   int opos = 0;
-   int top = 0;
-
-   if (i == 0 || base > 16) 
-   {
-      buf[0] = '0';
-      buf[1] = '\0';
-      return;
-   }
-
-   while (i != 0) 
-   {
-      tbuf[pos] = bchars[i % base];
-      pos++;
-      i /= base;
-   }
-   top=pos--;
-   for (opos=0; opos<top; pos--,opos++) 
-   {
-      buf[opos] = tbuf[pos];
-   }
-   buf[opos] = 0;
-}
-
-void itoa_s(int i, unsigned base, char *buf) 
-{
-   if (base > 16) return;
-   if (i < 0) 
-   {
-      *buf++ = '-';
-      i *= -1;
-   }
-   itoa(i,base,buf);
-}
-
-unsigned setattribute (enum color foreground, enum color background) 
-{
-	unsigned old = attribute;
-	attribute = foreground | (background << 4);
-	return old;
-}
-
-void gotoxy (unsigned x, unsigned y) 
-{
-	if(textmode_type == TEXTMODE_INVALID) init_textmode();
-	if(textmode_type != TEXTMODE_COLOUR && textmode_type != TEXTMODE_MONOCHROME) return;
-	
-	curPos_x = x;
-	curPos_y = y;
-	startX = curPos_x;
-	startY = curPos_y;
-	updatecursor();
-}
-
+/*==============================================================================================*/
+// Interface Functions
+/*==============================================================================================*/
+/*************************************************************************************************
+	<summary>clrscr</summary>
+	<para>clears the screen</para>
+*************************************************************************************************/
 void clrscr () 
 {
 	if(textmode_type == TEXTMODE_INVALID) init_textmode();
@@ -194,11 +161,47 @@ void clrscr ()
 	
     curPos_x = 0;
     curPos_y = 0;
+	
 	updatecursor();
 	return;
 }
 
-void puts (char* str) 
+/*************************************************************************************************
+	<summary>setattribute</summary>
+	<para>sets the character attribute byte</para>
+	<returns>old character attribute byte</returns>
+*************************************************************************************************/
+unsigned setattribute (enum color foreground, enum color background) 
+{
+	unsigned old = attribute;
+	attribute = foreground | (background << 4);
+	return old;
+}
+
+/*************************************************************************************************
+	<summary>gotoxy</summary>
+	<para>moves the cursor to the given position</para>
+	<param name="x" type="unsigned int">cursor's x position</param>
+	<param name="y" type="unsigned int">cursor's y position</param>
+*************************************************************************************************/
+void gotoxy (unsigned int x, unsigned int y) 
+{
+	if(textmode_type == TEXTMODE_INVALID) init_textmode();
+	if(textmode_type != TEXTMODE_COLOUR && textmode_type != TEXTMODE_MONOCHROME) return;
+	
+	curPos_x = x;
+	curPos_y = y;
+	startX = curPos_x;
+	startY = curPos_y;
+	updatecursor();
+}
+
+/*************************************************************************************************
+	<summary>puts</summary>
+	<para>prints a string on the screen</para>
+	<param name="str" type="char *">string that has to be printed</param>
+*************************************************************************************************/
+void puts (char *str) 
 {
 	if(textmode_type == TEXTMODE_INVALID) init_textmode();
 	if(textmode_type != TEXTMODE_COLOUR && textmode_type != TEXTMODE_MONOCHROME) return;
@@ -210,7 +213,30 @@ void puts (char* str)
 		putc(str[i]);
 }
 
-int printf (const char* str, ...) 
+/*************************************************************************************************
+	<summary>printf</summary>
+	<para>prints a formatted string</para>
+	<param name="str" type="const char *">command id</param>
+	<param name="..."></param>
+	<returns>
+		0 on success
+		1 on failure
+	</returns>
+	<remarks>
+		Specifiers:
+		%% - prints a %
+		%c - prints a character
+		%s - prints a string
+		%d - prints an integer
+		%i - prints an integer
+		%x - prints a hexadecimal number
+		%p - prints an address
+		%o - prints an octal number
+		
+		In case an error is encountered, whatever was supposed to be printed before the error character will be printed.
+	</remarks>
+*************************************************************************************************/
+int printf (const char *str, ...) 
 {
 	if(textmode_type == TEXTMODE_INVALID) init_textmode();
 	if(textmode_type != TEXTMODE_COLOUR && textmode_type != TEXTMODE_MONOCHROME) return 0;
@@ -229,29 +255,27 @@ int printf (const char* str, ...)
 			{
 				switch (str[++i]) 
 				{
+					// print a %
 					case '%':
 					{
 						putc ('%');
 						break;
 					}
-					
-					/* characters */					
+					// character
 					case 'c': 
 					{
 						char c = va_arg (args, char);
 						putc (c);
 						break;
-					}
-
-					/* address of */
+					}					
+					// string
 					case 's': 
 					{
 						char * tmp = va_arg (args, char *);
 						puts (tmp);
 						break;
 					}
-
-					/* integers */
+					// integers
 					case 'd':
 					case 'i': 
 					{
@@ -261,10 +285,9 @@ int printf (const char* str, ...)
 						puts (tmp);
 						break;
 					}
-
-					/* display in hex */
-					case 'X':
-					case 'x': 
+					// heaxdacimal numbers and pointer addresses
+					case 'x':
+					case 'p':
 					{
 						int c = va_arg (args, int);
 						putc('0');
@@ -274,10 +297,19 @@ int printf (const char* str, ...)
 						puts (tmp);
 						break;
 					}
-
+					// octal numbers
+					case 'o': 
+					{
+						int c = va_arg (args, int);
+						putc('0');
+						char tmp[32] = "\0";
+						itoa_s (c,8,tmp);
+						puts (tmp);
+						break;
+					}
 					default:
 						va_end (args);
-						return 1;
+						return 0;
 				}
 				break;
 			}

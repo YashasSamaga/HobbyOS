@@ -1,4 +1,5 @@
 /******************************************************************************/
+//	Standard C Library
 //	Generic String Library
 //
 //	Standard String Library Routines Implementation
