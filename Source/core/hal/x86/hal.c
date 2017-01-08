@@ -12,43 +12,25 @@
 //	Date: January 6th 2017
 //
 /************************************************************************************************/
-#include "hal.h"
-#include "cpu\cpu.h"
-
-#include <hal.h>
 #include <stdint.h>
 
-/*===============================================================================================*/
-// Interface Functions
-/*===============================================================================================*/
-/*************************************************************************************************
-	<summary>inportb</summary>
-	<para>inputs a byte from the specified port</para>
-	<param name="port" type="uint16_t"></param>
-	<returns type="uint8_t">byte received from the port</returns>
-*************************************************************************************************/
-inline uint8_t inportb(uint16_t _port)
-{
-    uint8_t rv;
-    __asm__ __volatile__ ("inb %1, %0" : "=a" (rv) : "dN" (_port));
-    return rv;
-}
-
-/*************************************************************************************************
-	<summary>outportb</summary>
-	<para>outputs a byte to the specified port</para>
-	<param name="port" type="uint16_t"></param>
-	<param name="data" type="uint8_t"></param>
-*************************************************************************************************/
-inline void outportb(uint16_t _port, uint8_t _data)
-{
-    __asm__ __volatile__ ("outb %1, %0" : : "dN" (_port), "a" (_data));
-}
+#include <hal.h>
+#include <pic.h>
+#include <cpu\cpu.h>
+#include <cpu\exceptions.h>
 
 /*===============================================================================================*/
 // Implementation Functions (Private)
 /*===============================================================================================*/
-int hal_shutdown();
+/*************************************************************************************************
+	<summary>hal_shutdown</summary>
+	<para>carries out the shutdown processes</para>
+*************************************************************************************************/
+int hal_shutdown() 
+{
+	cpu_shutdown();
+	return 0;
+}
 
 /*************************************************************************************************
 	<summary>hal_initialize</summary>
@@ -61,20 +43,14 @@ int hal_shutdown();
 void hal_initialize() 
 {
 	cpu_initialize();
+	// remap IRQs so that they won't trigger exceptions
+	pic_initialize(MAX_CPU_EXCEPTIONS, MAX_CPU_EXCEPTIONS + 8);
 	
-	// HAL initilized, execute kernel_init()
+	//HAL initilized, execute kernel_init()
 	extern int kernel_init();
 	if(kernel_init() == 1) hal_shutdown (); // something went wrong, shutdown the computer
 	
 	for(;;);
 }
 
-/*************************************************************************************************
-	<summary>hal_shutdown</summary>
-	<para>carries out the shutdown processes</para>
-*************************************************************************************************/
-int hal_shutdown() 
-{
-	cpu_shutdown();
-	return 0;
-}
+

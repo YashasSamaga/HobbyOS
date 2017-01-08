@@ -17,26 +17,14 @@
 #endif
 
 #include <stdint.h>
+#include <lindus-specifics\ls-exceptions.h>
 
-enum color
-{ 	
-	COLOR_BLACK = 0, 	
-	COLOR_BLUE = 1, 	
-	COLOR_GREEN = 2, 	
-	COLOR_CYAN = 3, 	
-	COLOR_RED = 4, 	
-	COLOR_MAGENTA = 5, 	
-	COLOR_BROWN = 6, 	
-	COLOR_LIGHT_GREY = 7, 	
-	COLOR_DARK_GREY = 8, 	
-	COLOR_LIGHT_BLUE = 9, 	
-	COLOR_LIGHT_GREEN = 10, 	
-	COLOR_LIGHT_CYAN = 11, 	
-	COLOR_LIGHT_RED = 12, 	
-	COLOR_LIGHT_MAGENTA = 13, 	
-	COLOR_LIGHT_BROWN = 14, 	
-	COLOR_WHITE = 15 
-};
+extern int exception_install_handler(unsigned int ls_exception_id, void (*handler)());
+extern int exception_uninstall_handler(unsigned int ls_exception_id);
+extern void *exception_get_handler(unsigned int ls_exception_id);
+
+extern void irq_enable();
+extern void irq_disable();
 
 extern void clrscr ();
 extern void puts (char* str);

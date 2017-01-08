@@ -24,7 +24,7 @@ EXECUTABLE = $(BUILDDIR)/KRNL.BIN
 LINKER = ld
 LDFLAGS = -T link.ld
 
-OBJECTS = $(HALDIR)/init.o $(HALDIR)/hal.o $(HALDIR)/textmode.o $(HALDIR)/cpu/cpu.o $(HALDIR)/cpu/gdt.o $(HALDIR)/cpu/idt.o $(LIBFILE) kernel/main.o
+OBJECTS = $(HALDIR)/init.o $(HALDIR)/hal.o $(HALDIR)/textmode.o $(HALDIR)/cpu/cpu.o $(HALDIR)/cpu/gdt.o $(HALDIR)/cpu/idt.o $(HALDIR)/cpu/exceptions.o $(HALDIR)/irq.o $(HALDIR)/swints.o $(HALDIR)/pic.o $(LIBFILE) kernel/main.o
 # $(HALFILE) $(KERNELFILE) 
 
 all: build_hal build_lib build_kernel link

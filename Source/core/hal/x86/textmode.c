@@ -8,14 +8,13 @@
 //	Date: January 6th 2017
 //
 /************************************************************************************************/
-#include "hal.h"
-
-#include <hal.h>
 #include <stdarg.h>
 #include <string.h>
 #include <ctype.h>
 #include <stdlib.h>
 #include <stdint.h>
+
+#include <hal.h>
 
 /*==============================================================================================*/
 // Defines and Enumerations (Private)
@@ -38,13 +37,13 @@ typedef enum textmode_types
 /*==============================================================================================*/
 // Implementation Data (Private)
 /*==============================================================================================*/
-static uint16_t *vmemptr;
+uint16_t *vmemptr;
 
-static uint8_t curPos_x = 0, curPos_y = 0;
-static uint8_t startX = 0, startY = 0;
+uint8_t curPos_x = 0, curPos_y = 0;
+uint8_t startX = 0, startY = 0;
 
-static uint8_t attribute = 0x0F;
-static textmode_types textmode_type = TEXTMODE_INVALID;
+uint8_t attribute = 0x0F;
+textmode_types textmode_type = TEXTMODE_INVALID;
 
 /*==============================================================================================*/
 // Implementation Functions (Private)
@@ -53,7 +52,7 @@ static textmode_types textmode_type = TEXTMODE_INVALID;
 	<summary>init_textmode</summary>
 	<para>identifies the display mode/device and sets the video memory pointer appropriately</para>
 *************************************************************************************************/
-static void init_textmode()
+void init_textmode()
 {
     textmode_type = (*(volatile uint16_t*)0x410) & 0x30; // BIOS Data Area
     switch(textmode_type)
@@ -76,7 +75,7 @@ static void init_textmode()
 	<summary>updatecursor</summary>
 	<para>communicates with the display hardware and sets the blinking cursor position</para>
 *************************************************************************************************/
-static inline void updatecursor()
+inline void updatecursor()
 {
 	unsigned int temp = curPos_y * TEXTMODE_MAX_X + curPos_x;
 
@@ -92,7 +91,7 @@ static inline void updatecursor()
 	<param name="c" type="unsigned char">the character that has to be printed</param>
 	<remarks>updates the cursor automatically</remarks>
 *************************************************************************************************/
-static void putc(unsigned char c) 
+void putc(unsigned char c) 
 {	
 	switch(c)
 	{
@@ -171,7 +170,7 @@ void clrscr ()
 	<para>sets the character attribute byte</para>
 	<returns>old character attribute byte</returns>
 *************************************************************************************************/
-unsigned setattribute (enum color foreground, enum color background) 
+unsigned setattribute (int foreground, int background) 
 {
 	unsigned old = attribute;
 	attribute = foreground | (background << 4);

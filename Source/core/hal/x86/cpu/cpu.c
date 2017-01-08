@@ -8,12 +8,11 @@
 //	Date: January 6th 2017
 //
 /************************************************************************************************/
-#include "..\hal.h"
-#include "cpu.h"
-#include "gdt.h"
-#include "idt.h"
-
 #include <hal.h>
+#include <cpu\cpu.h>
+#include <cpu\gdt.h>
+#include <cpu\idt.h>
+
 /*==============================================================================================*/
 // Interface Functions
 /*==============================================================================================*/
@@ -24,7 +23,7 @@
 int cpu_initialize() 
 {
 	initilize_gdt();
-	initilize_idt();
+	initilize_idt();	
 	return 0;
 }
 

@@ -5,8 +5,8 @@
 include hal/make.config
 
 # HAL source files
-HAL_CSOURCES = $(HALDIR)/hal.c $(HALDIR)/textmode.c $(HALDIR)/cpu/cpu.c $(HALDIR)/cpu/gdt.c $(HALDIR)/cpu/idt.c 
-HAL_COBJECTS = $(HALDIR)/hal.o $(HALDIR)/textmode.o $(HALDIR)/cpu/cpu.o $(HALDIR)/cpu/gdt.o $(HALDIR)/cpu/idt.o 
+HAL_CSOURCES = $(HALDIR)/hal.c $(HALDIR)/textmode.c $(HALDIR)/cpu/cpu.c $(HALDIR)/cpu/gdt.c $(HALDIR)/cpu/idt.c $(HALDIR)/cpu/exceptions.c $(HALDIR)/irq.c $(HALDIR)/pic.c $(HALDIR)/swints.c 
+HAL_COBJECTS = $(HALDIR)/hal.o $(HALDIR)/textmode.o $(HALDIR)/cpu/cpu.o $(HALDIR)/cpu/gdt.o $(HALDIR)/cpu/idt.o $(HALDIR)/cpu/exceptions.o $(HALDIR)/irq.o $(HALDIR)/pic.o $(HALDIR)/swints.o 
 HAL_ASMSOURCES = $(HALDIR)/init.asm
 HAL_ASMOBJECTS = $(HALDIR)/init.o
 HAL_OBJECTS = $(HAL_ASMOBJECTS) $(HAL_COBJECTS)
@@ -22,7 +22,7 @@ ASMFLAGS = -f aout
 ARFLAGS = rvs
 
 # define directories containing header files
-INCLUDES = -I./include
+INCLUDES = -I./$(HALDIR)/include -I./include
 
 .PHONY: all clean
 .SUFFIXES: .o .c .asm

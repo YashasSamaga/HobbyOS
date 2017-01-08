@@ -9,18 +9,17 @@
 //	Date: January 6th 2017
 //
 /*************************************************************************************************/
-#include "..\hal.h"
-#include "cpu.h"
-#include "idt.h"
-#include "gdt.h"
+#include <stdint.h>
 
 #include <hal.h>
-#include <stdint.h>
+#include <pic.h>
+#include <cpu\cpu.h>
+#include <cpu\idt.h>
+#include <cpu\gdt.h>
 
 /*==============================================================================================*/
 // Implementation External Function Prototypes
 /*==============================================================================================*/
-// Exceptions
 extern void isr_except0();
 extern void isr_except1();
 extern void isr_except2();
@@ -54,7 +53,6 @@ extern void isr_except29();
 extern void isr_except30();
 extern void isr_except31();
 
-// Hardware Device Interrupt Requests
 extern void isr_hwd_irq0();
 extern void isr_hwd_irq1();
 extern void isr_hwd_irq2();
@@ -72,7 +70,6 @@ extern void isr_hwd_irq13();
 extern void isr_hwd_irq14();
 extern void isr_hwd_irq15();
 
-// Other Interrupt Requests
 extern void isr48();
 extern void isr49();
 extern void isr50();
@@ -296,26 +293,6 @@ struct idt_ptr
 /*==============================================================================================*/
 static struct idt_entry	idt [MAX_INTERRUPTS];
 static struct idt_ptr idtr;
-
-/*==============================================================================================*/
-// Implementation Interrupt Handling Functions (Private)
-/*==============================================================================================*/
-void exception_handler(struct cpu_regs *state)
-{
-    printf("Exception ID %d has been triggered.\nfor(;;);", state->intid);
-    for (;;);
-}
-
-void hwd_irq_handler(struct cpu_regs *state)
-{
-	for (;;);
-}
-
-void isr_default_handler(struct cpu_regs *state)
-{
-	for (;;);
-}
-
 
 /*==============================================================================================*/
 // Interface Functions

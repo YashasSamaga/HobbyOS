@@ -16,7 +16,6 @@ bits 32
 global start ; must be visible to the linker (link.ld asks the linker to put 'start' at the start)
 
 start:
-	cli
 	mov ax, 0x10
 	mov ds, ax
 	mov es, ax
