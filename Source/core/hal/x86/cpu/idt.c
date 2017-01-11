@@ -12,7 +12,7 @@
 #include <stdint.h>
 
 #include <hal.h>
-#include <pic.h>
+#include <chips\pic-i8259.h>
 #include <cpu\cpu.h>
 #include <cpu\idt.h>
 #include <cpu\gdt.h>
@@ -285,14 +285,17 @@ extern void isr255();
 struct idt_ptr
 {
     uint16_t limit;
-    uint32_t base;
+    uintptr_t base;
 } __attribute__((packed));
 
 /*==============================================================================================*/
 // Implementation Data (Private)
 /*==============================================================================================*/
-static struct idt_entry	idt [MAX_INTERRUPTS];
-static struct idt_ptr idtr;
+static struct
+{
+	struct idt_entry entries [MAX_INTERRUPTS];
+	struct idt_ptr idtr;
+}idt;
 
 /*==============================================================================================*/
 // Interface Functions
@@ -304,9 +307,9 @@ static struct idt_ptr idtr;
 	<remarks>the pointer returned points to the "real" descriptor in the memory</remarks>
 	<returns>a pointer to the descriptor (idt_entry *)</returns>
 *************************************************************************************************/
-struct idt_entry* idt_get_descriptor (unsigned int idx) 
+struct idt_entry* idt_get_descriptor (int idx) 
 {
-	return &idt[idx];
+	return &idt.entries[idx];
 }
 
 /*************************************************************************************************
@@ -318,13 +321,13 @@ struct idt_entry* idt_get_descriptor (unsigned int idx)
 	<param name="flags" type="uint8_t">flags</param>
 	<remarks>refer to cpu.h for the list of flags</remarks>
 *************************************************************************************************/
-void idt_set_descriptor(uint8_t num, uint32_t base, uint16_t sel, uint8_t flags)
+void idt_set_descriptor(uint8_t num, uintptr_t base, uint16_t sel, uint8_t flags)
 {
-    idt[num].base_lo = (base & 0xFFFF);
-    idt[num].base_hi = (base >> 16) & 0xFFFF;
-    idt[num].sel = sel;
-    idt[num].always0 = 0;
-    idt[num].flags = flags;
+    idt.entries[num].base_low = (base & 0xFFFF);
+    idt.entries[num].base_high = (base >> 16) & 0xFFFF;
+    idt.entries[num].sel = sel;
+    idt.entries[num].always0 = 0;
+    idt.entries[num].flags = flags;
 }
 
 /*************************************************************************************************
@@ -595,12 +598,12 @@ void initilize_idt()
 	idt_set_descriptor(252, (unsigned)isr252, CODE_DESC, IDT_DESC_TYPE_INT_32 | IDT_DESC_DPL_RING0 | IDT_DESC_PRESENT);
 	idt_set_descriptor(253, (unsigned)isr253, CODE_DESC, IDT_DESC_TYPE_INT_32 | IDT_DESC_DPL_RING0 | IDT_DESC_PRESENT);
 	idt_set_descriptor(254, (unsigned)isr254, CODE_DESC, IDT_DESC_TYPE_INT_32 | IDT_DESC_DPL_RING0 | IDT_DESC_PRESENT);
-	idt_set_descriptor(255, (unsigned)isr255, CODE_DESC, IDT_DESC_TYPE_INT_32 | IDT_DESC_DPL_RING0 | IDT_DESC_PRESENT);	
+	idt_set_descriptor(255, (unsigned)isr255, CODE_DESC, IDT_DESC_TYPE_INT_32 | IDT_DESC_DPL_RING0 | IDT_DESC_PRESENT);
 	
 	// set IDT pointer
-	idtr.limit = (sizeof (struct idt_entry) * MAX_INTERRUPTS) - 1;
-    idtr.base = (uint32_t)&idt;
+	idt.idtr.limit = (sizeof (struct idt_entry) * MAX_INTERRUPTS) - 1;
+    idt.idtr.base = (uint32_t)&idt.entries;
 	
 	// set IDTR processor register
-	__asm__ __volatile__ ("lidt %0" : : "m"(idtr) : "memory");	
+	__asm__ __volatile__ ("lidt %0" : : "m"(idt.idtr) : "memory");	
 }

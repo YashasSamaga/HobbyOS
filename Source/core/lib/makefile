@@ -5,11 +5,11 @@
 include lib/make.config
 
 # library source files
-LIB_CSOURCES = lib/string.c lib/stdlib.c
-LIB_COBJECTS = lib/string.o lib/stdlib.o
+LIB_CSOURCES = $(LIBDIR)/string.c $(LIBDIR)/stdlib.c
+LIB_COBJECTS = $(BUILD_LIBDIR)/string.o $(BUILD_LIBDIR)/stdlib.o
 LIB_OBJECTS = $(LIB_COBJECTS)
 
-# define the compiler and linker to use
+# define the compiler and archiver to use
 CC = gcc
 AR = ar
 
@@ -25,7 +25,7 @@ INCLUDES = -I./include
 
 all: $(LIB_OBJECTS) archive
 
-.c.o:
+$(BUILD_LIBDIR)/%.o: $(LIBDIR)/%.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c -o $@ $<
 		
 archive:

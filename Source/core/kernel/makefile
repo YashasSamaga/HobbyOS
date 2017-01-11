@@ -5,8 +5,8 @@
 include kernel/make.config
 
 # kernel source files
-KERNEL_CSOURCES = kernel/main.c 
-KERNEL_COBJECTS = kernel/main.o 
+KERNEL_CSOURCES = $(KERNELDIR)/main.c 
+KERNEL_COBJECTS = $(BUILD_KERNELDIR)/main.o 
 KERNEL_OBJECTS = $(KERNEL_COBJECTS)
 
 # define the compiler and linker to use
@@ -21,15 +21,14 @@ ARFLAGS = rvs
 INCLUDES = -I./include
 
 .PHONY: all clean
-.SUFFIXES: .o .c
 
 all: $(KERNEL_OBJECTS) link
 
-.c.o:
+$(BUILD_KERNELDIR)/%.o: $(KERNELDIR)/%.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c -o $@ $<
 		
 link:
 	$(AR) $(ARFLAGS) $(KERNELFILE) $(KERNEL_OBJECTS)
  
 clean:
-	rm kernel/*.o
+#TODO

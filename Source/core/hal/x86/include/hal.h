@@ -56,4 +56,9 @@ inline void io_wait(void)
     __asm__ __volatile__ ( "outb %%al, $0x80" : : "a"(0) );
 }
 
+extern void clrscr ();
+extern void puts (char* str);
+extern int printf (const char* str, ...);
+extern uint8_t setattribute (int foreground, int background);
+extern void gotoxy (unsigned x, unsigned y);
 #endif // _HAL_LOCAL_H

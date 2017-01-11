@@ -11,7 +11,7 @@
 
 int kernel_init()
 {
-	setattribute(COLOR_WHITE, COLOR_BLUE);
+	setattribute(15, 3);
 	printf("\n\nHi from Kernel");
 	for(;;);
 }

@@ -170,7 +170,7 @@ void clrscr ()
 	<para>sets the character attribute byte</para>
 	<returns>old character attribute byte</returns>
 *************************************************************************************************/
-unsigned setattribute (int foreground, int background) 
+uint8_t setattribute (int foreground, int background) 
 {
 	unsigned old = attribute;
 	attribute = foreground | (background << 4);

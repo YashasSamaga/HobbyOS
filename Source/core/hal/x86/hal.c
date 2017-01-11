@@ -15,9 +15,11 @@
 #include <stdint.h>
 
 #include <hal.h>
-#include <pic.h>
+#include <irq.h>
 #include <cpu\cpu.h>
 #include <cpu\exceptions.h>
+#include <chips\pic-i8259.h>
+#include <chips\pit-i8253.h>
 
 /*===============================================================================================*/
 // Implementation Functions (Private)
@@ -45,6 +47,8 @@ void hal_initialize()
 	cpu_initialize();
 	// remap IRQs so that they won't trigger exceptions
 	pic_initialize(MAX_CPU_EXCEPTIONS, MAX_CPU_EXCEPTIONS + 8);
+	pit_initialize();
+	irq_enable();
 	
 	//HAL initilized, execute kernel_init()
 	extern int kernel_init();

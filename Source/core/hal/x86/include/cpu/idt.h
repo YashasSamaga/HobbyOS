@@ -33,17 +33,17 @@
 /*==============================================================================================*/
 struct idt_entry
 {
-    uint16_t base_lo;
+    uint16_t base_low;
     uint16_t sel;
     uint8_t always0;
     uint8_t flags;
-    uint16_t base_hi;
+    uint16_t base_high;
 } __attribute__((packed));
 
 /*==============================================================================================*/
 // Interface Function Prototypes
 /*==============================================================================================*/
-extern struct idt_entry* idt_get_descriptor (uint32_t i);
+extern struct idt_entry* idt_get_descriptor (int i);
 extern void idt_set_descriptor(uint8_t num, uint32_t base, uint16_t sel, uint8_t flags);
 extern void initilize_idt();
 

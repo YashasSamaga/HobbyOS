@@ -5,10 +5,13 @@
 include hal/make.config
 
 # HAL source files
-HAL_CSOURCES = $(HALDIR)/hal.c $(HALDIR)/textmode.c $(HALDIR)/cpu/cpu.c $(HALDIR)/cpu/gdt.c $(HALDIR)/cpu/idt.c $(HALDIR)/cpu/exceptions.c $(HALDIR)/irq.c $(HALDIR)/pic.c $(HALDIR)/swints.c 
-HAL_COBJECTS = $(HALDIR)/hal.o $(HALDIR)/textmode.o $(HALDIR)/cpu/cpu.o $(HALDIR)/cpu/gdt.o $(HALDIR)/cpu/idt.o $(HALDIR)/cpu/exceptions.o $(HALDIR)/irq.o $(HALDIR)/pic.o $(HALDIR)/swints.o 
+#HAL_CSOURCES = $(wildcard cpu/*.c) $(wildcard *.c) $(wildcard chips/*.c)
+#HAL_COBJECTS = $(patsubst %.c, %.o, $(HAL_CSOURCES))
+
+HAL_CSOURCES = $(HALDIR)/hal.c $(HALDIR)/textmode.c $(HALDIR)/cpu/cpu.c $(HALDIR)/cpu/gdt.c $(HALDIR)/cpu/idt.c $(HALDIR)/cpu/exceptions.c $(HALDIR)/irq.c $(HALDIR)/chips/pic-i8259.c $(HALDIR)/chips/pit-i8253.c $(HALDIR)/swints.c 
+HAL_COBJECTS = $(BUILD_HALDIR)/hal.o $(BUILD_HALDIR)/textmode.o $(BUILD_HALDIR)/cpu/cpu.o $(BUILD_HALDIR)/cpu/gdt.o $(BUILD_HALDIR)/cpu/idt.o $(BUILD_HALDIR)/cpu/exceptions.o $(BUILD_HALDIR)/irq.o $(BUILD_HALDIR)/chips/pic-i8259.o $(BUILD_HALDIR)/chips/pit-i8253.o $(BUILD_HALDIR)/swints.o 
 HAL_ASMSOURCES = $(HALDIR)/init.asm
-HAL_ASMOBJECTS = $(HALDIR)/init.o
+HAL_ASMOBJECTS = $(BUILD_HALDIR)/init.o
 HAL_OBJECTS = $(HAL_ASMOBJECTS) $(HAL_COBJECTS)
 
 # define the compiler, assembler and archiver to use
@@ -25,19 +28,17 @@ ARFLAGS = rvs
 INCLUDES = -I./$(HALDIR)/include -I./include
 
 .PHONY: all clean
-.SUFFIXES: .o .c .asm
 
 all: $(HAL_OBJECTS) archive
 
-.c.o:
+$(BUILD_HALDIR)/%.o: $(HALDIR)/%.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c -o $@ $<
 
-.asm.o:
+$(BUILD_HALDIR)/%.o: $(HALDIR)/%.asm 
 	$(ASMA) $(ASMFLAGS) -o $@ $<
-		
+
 archive:
 	$(AR) $(ARFLAGS) $(HALFILE) $(HAL_OBJECTS)
  
 clean:
-	rm hal/hal.o
-	rm $(HALDIR)/*.o
+#TODO
