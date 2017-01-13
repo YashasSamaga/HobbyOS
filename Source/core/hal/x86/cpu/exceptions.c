@@ -19,7 +19,7 @@
 /*==============================================================================================*/
 // Implementation Data (Private)
 /*==============================================================================================*/
-static const int i86_Exceptions[MAX_CPU_EXCEPTIONS] =
+static const unsigned int i86_Exceptions[MAX_CPU_EXCEPTIONS] =
 {
 	LS_EXCEPT_DIV_BY_ZERO,
 	LS_EXCEPT_DEBUG,			

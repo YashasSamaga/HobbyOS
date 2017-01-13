@@ -34,6 +34,22 @@ int hal_shutdown()
 	return 0;
 }
 
+struct memory_map_entry
+{
+	uint32_t startLow;
+	uint32_t startHigh;
+	uint32_t sizeLow;
+	uint32_t sizeHigh;
+	uint32_t type;
+	uint32_t acpi_extended_attribute;
+};
+struct bootInfo_t
+{
+	uint32_t memoryLow;
+	uint32_t memoryHigh;
+	uint32_t mmap_addr;
+	uint32_t mmap_entries;
+};
 /*************************************************************************************************
 	<summary>hal_initialize</summary>
 	<para>initilizes the hardware abstraction layer</para>
@@ -42,8 +58,10 @@ int hal_shutdown()
 		* calls the kernel after HAL initilization
 	</remarks>
 *************************************************************************************************/
-void hal_initialize() 
-{
+void hal_initialize(struct bootInfo_t *bootInfo) 
+{	
+	struct memory_map_entry* region = (struct memory_map_entry*)bootInfo->mmap_addr;
+	
 	cpu_initialize();
 	// remap IRQs so that they won't trigger exceptions
 	pic_initialize(MAX_CPU_EXCEPTIONS, MAX_CPU_EXCEPTIONS + 8);

@@ -58,7 +58,7 @@ inline void io_wait(void)
 
 extern void clrscr ();
 extern void puts (char* str);
-extern int printf (const char* str, ...);
+extern int printf (const char* str, ...) __attribute__ ((format (printf, 1, 2)));
 extern uint8_t setattribute (int foreground, int background);
 extern void gotoxy (unsigned x, unsigned y);
 #endif // _HAL_LOCAL_H

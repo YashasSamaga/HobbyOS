@@ -37,13 +37,13 @@ typedef enum textmode_types
 /*==============================================================================================*/
 // Implementation Data (Private)
 /*==============================================================================================*/
-uint16_t *vmemptr;
+static uint16_t *vmemptr;
 
-uint8_t curPos_x = 0, curPos_y = 0;
-uint8_t startX = 0, startY = 0;
+static uint8_t curPos_x = 0, curPos_y = 0;
+static uint8_t startX = 0, startY = 0;
 
-uint8_t attribute = 0x0F;
-textmode_types textmode_type = TEXTMODE_INVALID;
+static uint8_t attribute = 0x0F;
+static textmode_types textmode_type = TEXTMODE_INVALID;
 
 /*==============================================================================================*/
 // Implementation Functions (Private)
@@ -52,7 +52,7 @@ textmode_types textmode_type = TEXTMODE_INVALID;
 	<summary>init_textmode</summary>
 	<para>identifies the display mode/device and sets the video memory pointer appropriately</para>
 *************************************************************************************************/
-void init_textmode()
+static void init_textmode()
 {
     textmode_type = (*(volatile uint16_t*)0x410) & 0x30; // BIOS Data Area
     switch(textmode_type)
@@ -75,7 +75,7 @@ void init_textmode()
 	<summary>updatecursor</summary>
 	<para>communicates with the display hardware and sets the blinking cursor position</para>
 *************************************************************************************************/
-inline void updatecursor()
+static void updatecursor()
 {
 	unsigned int temp = curPos_y * TEXTMODE_MAX_X + curPos_x;
 
@@ -91,13 +91,17 @@ inline void updatecursor()
 	<param name="c" type="unsigned char">the character that has to be printed</param>
 	<remarks>updates the cursor automatically</remarks>
 *************************************************************************************************/
-void putc(unsigned char c) 
+static void putc(unsigned char c) 
 {	
 	switch(c)
 	{
 		case '\0': return;
 		case '\b':
 			if(curPos_x != 0) curPos_x--;
+		break;
+		
+		case ' ':
+			curPos_x++;
 		break;
 		
 		case '\t':
@@ -172,7 +176,7 @@ void clrscr ()
 *************************************************************************************************/
 uint8_t setattribute (int foreground, int background) 
 {
-	unsigned old = attribute;
+	uint8_t old = attribute;
 	attribute = foreground | (background << 4);
 	return old;
 }

@@ -27,9 +27,11 @@ struct gdt_ptr
 /*==============================================================================================*/
 // Implementation Data (Private)
 /*==============================================================================================*/
-static struct gdt_entry gdt[MAX_DESCRIPTORS];
-static struct gdt_ptr gdtr;
-
+static struct
+{
+	struct gdt_entry entries[MAX_DESCRIPTORS];
+	struct gdt_ptr gdtr;
+} gdt;
 /*==============================================================================================*/
 // Interface Functions
 /*==============================================================================================*/
@@ -42,7 +44,7 @@ static struct gdt_ptr gdtr;
 *************************************************************************************************/
 struct gdt_entry* gdt_get_descriptor (unsigned int idx) 
 {
-	return &gdt[idx];
+	return &gdt.entries[idx];
 }
 
 /*************************************************************************************************
@@ -57,15 +59,15 @@ struct gdt_entry* gdt_get_descriptor (unsigned int idx)
 *************************************************************************************************/
 void gdt_set_descriptor(unsigned int num, uint32_t base, uint32_t limit, uint8_t access, uint8_t gran)
 {
-    gdt[num].base_low = (base & 0xFFFF);
-    gdt[num].base_middle = (base >> 16) & 0xFF;
-    gdt[num].base_high = (base >> 24) & 0xFF;
+    gdt.entries[num].base_low = (base & 0xFFFF);
+    gdt.entries[num].base_middle = (base >> 16) & 0xFF;
+    gdt.entries[num].base_high = (base >> 24) & 0xFF;
 
-    gdt[num].limit_low = (limit & 0xFFFF);
-    gdt[num].granularity = ((limit >> 16) & 0x0F);
+    gdt.entries[num].limit_low = (limit & 0xFFFF);
+    gdt.entries[num].granularity = ((limit >> 16) & 0x0F);
 
-    gdt[num].granularity |= (gran & 0xF0);
-    gdt[num].access = access;
+    gdt.entries[num].granularity |= (gran & 0xF0);
+    gdt.entries[num].access = access;
 }
 
 /*************************************************************************************************
@@ -88,9 +90,9 @@ void initilize_gdt()
 	GDT_DESC_GRAN_4K | GDT_DESC_TYPE_32);	
 
 	// set GDT pointer
-    gdtr.limit = (sizeof(struct gdt_entry) * MAX_DESCRIPTORS) - 1;
-    gdtr.base = (uint32_t)&gdt;
+    gdt.gdtr.limit = (sizeof(struct gdt_entry) * MAX_DESCRIPTORS) - 1;
+    gdt.gdtr.base = (uint32_t)&gdt.entries;
 	
 	// set GDTR processor register
-	__asm__ __volatile__ ("lgdt %0" : : "m"(gdtr) : "memory");
+	__asm__ __volatile__ ("lgdt %0" : : "m"(gdt.gdtr) : "memory");
 }

@@ -74,7 +74,7 @@ statusA20:
 ; Attempts to enable A20 gate using different methods until success.
 ; If the function fails to enable the A20 gate, it forces a hard reboot.
 ;*****************************************************************************
-EnableA20:	
+EnableA20:
 ; check if A20 gate is already enabled
 	call statusA20
 	or ax, ax
@@ -150,9 +150,13 @@ EnableA20:
 	out	0x92, al
 	pop	ax
 	
+	mov ecx, 1000000
+	cld
+	.recheck:
 	call statusA20
 	or ax, ax
 	jnz EnableA20Done
+	loop .recheck
 
 ; all attempts to enable A20 gate failed
 	mov si, msgA20EnableFailure

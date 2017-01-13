@@ -9,9 +9,10 @@
 
 #include "hal.h"
 
-int kernel_init()
+int kernel_init() //called from the hardware abstraction layer
 {
-	setattribute(15, 3);
-	printf("\n\nHi from Kernel");
+	setattribute(1, 3);
+	clrscr();	
+	printf("Hi");
 	for(;;);
 }

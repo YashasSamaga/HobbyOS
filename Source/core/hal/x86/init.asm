@@ -21,13 +21,18 @@ start:
 	mov es, ax
 	mov fs, ax
 	mov gs, ax
-	mov ss, ax
-	mov	esp, 0x7FFFF
-	jmp 0x08:start2
 	
-start2:
+	pop edx
+	
+	mov ss, ax
+	mov	esp, 0x80000
+	
+	push edx
+	jmp 0x08:start2
+
+start2:	
 	extern _hal_initialize
-	jmp _hal_initialize
+	call _hal_initialize
 	cli
 	hlt
 

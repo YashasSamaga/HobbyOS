@@ -14,7 +14,7 @@ jmp	main
 %include "GDT.asm"
 %include "A20.asm"
 %include "FAT12.asm"
-
+%include "memory.asm"
 ;*****************************************************************************
 ; Defines
 ;*****************************************************************************
@@ -30,6 +30,7 @@ jmp	main
 ; 0x80000	0x9FFFF		121 KB			- Extended BIOS Data Area
 ; 0xA0000 	0xFFFFF		384 KB			- Video Memory, ROM Area
 
+%define MEMORY_MAP_BASE 0x2000		
 %define IMAGE_PMODE_BASE 0x100000 ; protected mode location
 %define IMAGE_RMODE_BASE 0x07E00 ; real mode location (temporary)
 
@@ -39,9 +40,24 @@ jmp	main
 ImageSize     			DB 0
 ImageName     			DB "HAL     SYS"
 
-msgFailure 				DB 0x0D, "Lindus couldn not start for the following reasons:", 0x0A, 0x00
+msgFailure 				DB 0x0D, "Lindus could not start for the following reasons:", 0x0A, 0x00
 msgLoadFailure 			DB 0x0D, "Hardware Abstraction Layer (HAL.SYS) is missing or corrupt.", 0x0A, 0x00
 msgAwaitKeypress 		DB 0x0D, "Press any key to restart.", 0x0A, 0x00
+
+struc bootInfo_t
+	.memoryLow			resd	1
+	.memoryHigh			resd	1
+	.mmap_addr			resd	1
+	.mmap_entries		resd	1
+endstruc	
+
+bootInfo:
+istruc bootInfo_t
+	at bootInfo_t.memoryLow,			DD 0
+	at bootInfo_t.memoryHigh,			DD 0
+	at bootInfo_t.mmap_addr,			DD MEMORY_MAP_BASE
+	at bootInfo_t.mmap_entries,			DD 0
+iend
 
 ;*****************************************************************************
 ; puts
@@ -103,6 +119,22 @@ main:
 	mov	sp, 0x7C00 ; use the space below the bootsector
 	sti
 	
+	; obtain information from BIOS
+	xor	eax, eax
+	xor	ebx, ebx
+	call BiosGetMemorySize
+	
+	mov	WORD [bootInfo + bootInfo_t.memoryHigh], bx
+	mov	WORD [bootInfo + bootInfo_t.memoryLow], ax
+
+	mov	eax, 0x0
+	mov	ds, ax
+	mov	di, WORD [bootInfo + bootInfo_t.mmap_addr]
+	call BiosGetMemoryMap
+	
+	mov WORD [bootInfo + bootInfo_t.mmap_entries], bp
+	
+	; load FAT and find the file
 	call FAT12_LoadRoot
 
 	mov	ebx, 0
@@ -156,6 +188,7 @@ Stage3:
    	mov	ecx, eax
    	repe	movsd
 
+	push	DWORD bootInfo
 	jmp	CODE_DESC:IMAGE_PMODE_BASE
 
 	cli
