@@ -1,5 +1,8 @@
 # LindusOS
 
+[![Build Status](https://travis-ci.org/YashasSamaga/LindusOS.svg?branch=master)](https://travis-ci.org/YashasSamaga/LindusOS)
+
+
 ##Source Tree
  
       bootloader\
