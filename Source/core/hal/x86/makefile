@@ -23,7 +23,7 @@ AR = ar
 INCLUDES = -I$(realpath $(HALDIR)/include) -I$(realpath include)
 
 # define compiler, assembler and linker flags
-CFLAGS =  -Wall -Wextra -O -ffreestanding -fstrength-reduce -fomit-frame-pointer -finline-functions -nostdinc -fno-builtin
+CFLAGS = $(INCLUDES) -Wall -Wextra -O -ffreestanding -fstrength-reduce -fomit-frame-pointer -finline-functions -nostdinc -fno-builtin
 ASMFLAGS = -f aout
 ARFLAGS = rvs
 
