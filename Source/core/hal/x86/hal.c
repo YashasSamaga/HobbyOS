@@ -16,11 +16,11 @@
 
 #include <hal.h>
 #include <irq.h>
-#include <cpu\cpu.h>
-#include <cpu\exceptions.h>
-#include <chips\pic-i8259.h>
-#include <chips\pit-i8253.h>
-#include <memory\phys_mm.h>
+#include <cpu/cpu.h>
+#include <cpu/exceptions.h>
+#include <chips/pic-i8259.h>
+#include <chips/pit-i8253.h>
+#include <memory/phys_mm.h>
 
 /*===============================================================================================*/
 // Defines and Enumerations (Private)
