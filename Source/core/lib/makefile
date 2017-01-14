@@ -14,7 +14,7 @@ CC = gcc
 AR = ar
 
 # define compiler and linker flags
-CFLAGS = -Wall -O -ffreestanding -fstrength-reduce -fomit-frame-pointer -finline-functions -nostdinc -fno-builtin 
+CFLAGS = -Wall -Wextra -std=c99 -O -ffreestanding -fstrength-reduce -fomit-frame-pointer -finline-functions -nostdinc -fno-builtin 
 ARFLAGS = rvs
 
 # define directories containing header files
