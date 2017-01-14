@@ -19,20 +19,20 @@ CC = gcc
 ASMA = nasm
 AR = ar
 
+# define directories containing header files
+INCLUDES = -I/$(HALDIR)/include -I/include
+
 # define compiler, assembler and linker flags
-CFLAGS = -Wall -Wextra -O -ffreestanding -fstrength-reduce -fomit-frame-pointer -finline-functions -nostdinc -fno-builtin
+CFLAGS = $(INCLUDES) -Wall -Wextra -O -ffreestanding -fstrength-reduce -fomit-frame-pointer -finline-functions -nostdinc -fno-builtin
 ASMFLAGS = -f aout
 ARFLAGS = rvs
-
-# define directories containing header files
-INCLUDES = -I./$(HALDIR)/include -I./include
 
 .PHONY: all clean
 
 all: $(HAL_OBJECTS) archive
 
 $(BUILD_HALDIR)/%.o: $(HALDIR)/%.c
-	$(CC) $(CFLAGS) $(INCLUDES) -c -o $@ $<
+	$(CC) $(CFLAGS) -c -o $@ $<
 
 $(BUILD_HALDIR)/%.o: $(HALDIR)/%.asm 
 	$(ASMA) $(ASMFLAGS) -o $@ $<
