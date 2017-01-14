@@ -9,7 +9,7 @@ compiler:
 script:
 - cd Source
 - cd core
-- chmod -R 777 build
+- chmod -R 777 /build
 - make
 
 addons:
