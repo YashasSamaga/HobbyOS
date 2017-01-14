@@ -17,7 +17,7 @@
 #endif
 
 #include <stdint.h>
-#include <lindus-specifics\ls-exceptions.h>
+#include <lindus-specifics/ls-exceptions.h>
 
 extern int exception_install_handler(unsigned int ls_exception_id, void (*handler)());
 extern int exception_uninstall_handler(unsigned int ls_exception_id);
