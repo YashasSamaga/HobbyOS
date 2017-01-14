@@ -7,7 +7,9 @@ compiler:
 - gcc
 
 script:
-- make source/core
+- cd source
+- cd core
+- make
 
 addons:
     apt:
