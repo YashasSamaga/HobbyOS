@@ -9,7 +9,7 @@ compiler:
 script:
 - cd Source
 - cd core
-- ls -d
+- ls /
 - chmod -R 777 build
 - make
 
