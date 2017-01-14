@@ -9,6 +9,10 @@ compiler:
 script:
 - cd Source
 - cd core
+- mkdir build
+- mkdir build/hal
+- mkdir build/lib
+- mkdir build/kernel
 - ls -d */
 - ls build/
 - chmod -R 777 build
