@@ -10,6 +10,7 @@ script:
 - cd Source
 - cd core
 - ls /
+- ls build/
 - chmod -R 777 build
 - make
 
