@@ -258,7 +258,7 @@ isr_except31:
     push  31
     jmp isr_except_stub
 
-extern _exception_handler
+extern exception_handler
 isr_except_stub:
     pusha
     push ds
@@ -272,7 +272,7 @@ isr_except_stub:
     mov gs, ax
     mov eax, esp
     push eax
-    mov eax, _exception_handler
+    mov eax, exception_handler
     call eax
     pop eax
     pop gs
@@ -399,7 +399,7 @@ isr_hwd_irq15:
 	push  47
 	jmp isr_hwd_irq_stub
 	
-extern _hwd_irq_handler
+extern hwd_irq_handler
 isr_hwd_irq_stub:
     pusha
     push ds
@@ -413,7 +413,7 @@ isr_hwd_irq_stub:
     mov gs, ax
     mov eax, esp
     push eax
-    mov eax, _hwd_irq_handler
+    mov eax, hwd_irq_handler
     call eax
     pop eax
     pop gs
