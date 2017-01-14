@@ -20,10 +20,10 @@ ASMA = nasm
 AR = ar
 
 # define directories containing header files
-INCLUDES = -I/$(HALDIR)/include -I/include
+INCLUDES = -I$(realpath $(HALDIR)/include) -I$(realpath include)
 
 # define compiler, assembler and linker flags
-CFLAGS = $(realpath $(INCLUDES)) -Wall -Wextra -O -ffreestanding -fstrength-reduce -fomit-frame-pointer -finline-functions -nostdinc -fno-builtin
+CFLAGS =  -Wall -Wextra -O -ffreestanding -fstrength-reduce -fomit-frame-pointer -finline-functions -nostdinc -fno-builtin
 ASMFLAGS = -f aout
 ARFLAGS = rvs
 
