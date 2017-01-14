@@ -20,7 +20,7 @@ ASMA = nasm
 AR = ar
 
 # define compiler, assembler and linker flags
-CFLAGS = -Wall -Wextra -std=c99 -O -ffreestanding -fstrength-reduce -fomit-frame-pointer -finline-functions -nostdinc -fno-builtin 
+CFLAGS = -Wall -Wextra -std=c99 -m32 -O -ffreestanding -fstrength-reduce -fomit-frame-pointer -finline-functions -nostdinc -fno-builtin 
 ASMFLAGS = -f aout
 ARFLAGS = rvs
 
