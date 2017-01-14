@@ -10,11 +10,11 @@
 /*************************************************************************************************/
 #include <stdint.h>
 
-#include <lindus-specifics\ls-exceptions.h>
+#include <lindus-specifics/ls-exceptions.h>
 
 #include <hal.h>
-#include <cpu\cpu.h>
-#include <cpu\exceptions.h>
+#include <cpu/cpu.h>
+#include <cpu/exceptions.h>
 
 /*==============================================================================================*/
 // Implementation Data (Private)

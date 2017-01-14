@@ -11,11 +11,11 @@
 #include <stdint.h>
 
 #include <hal.h>
-#include <chips\pic-i8259.h>
+#include <chips/pic-i8259.h>
 #include <irq.h>
 #include <swints.h>
-#include <cpu\cpu.h>
-#include <cpu\exceptions.h>
+#include <cpu/cpu.h>
+#include <cpu/exceptions.h>
 
 /*==============================================================================================*/
 // Implementation Defines (Private)

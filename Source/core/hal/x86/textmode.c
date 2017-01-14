@@ -288,7 +288,15 @@ int printf (const char *str, ...)
 						puts (tmp);
 						break;
 					}
-					// heaxdacimal numbers and pointer addresses
+					// hexadecimal numbers and pointer addresses
+					case 'b':
+					{
+						int c = va_arg (args, int);
+						char tmp[33] = "\0";
+						itoa(c, 2, tmp);
+						puts (tmp);
+						break;
+					}
 					case 'x':
 					case 'p':
 					{
@@ -296,7 +304,7 @@ int printf (const char *str, ...)
 						putc('0');
 						putc('x');
 						char tmp[32] = "\0";
-						itoa_s (c,16,tmp);
+						itoa(c,16,tmp);
 						puts (tmp);
 						break;
 					}

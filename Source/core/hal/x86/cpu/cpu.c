@@ -9,9 +9,9 @@
 //
 /************************************************************************************************/
 #include <hal.h>
-#include <cpu\cpu.h>
-#include <cpu\gdt.h>
-#include <cpu\idt.h>
+#include <cpu/cpu.h>
+#include <cpu/gdt.h>
+#include <cpu/idt.h>
 
 /*==============================================================================================*/
 // Interface Functions

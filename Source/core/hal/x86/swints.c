@@ -13,8 +13,8 @@
 #include <hal.h>
 #include <irq.h>
 #include <swints.h>
-#include <cpu\cpu.h>
-#include <cpu\exceptions.h>
+#include <cpu/cpu.h>
+#include <cpu/exceptions.h>
 
 /*==============================================================================================*/
 // Implementation Data (Private)

@@ -24,7 +24,7 @@ EXECUTABLE = $(BUILDDIR)/KRNL.BIN
 LINKER = ld
 LDFLAGS = -T link.ld
 
-OBJECTS = $(BUILD_HALDIR)/init.o $(BUILD_HALDIR)/hal.o $(BUILD_HALDIR)/textmode.o $(BUILD_HALDIR)/cpu/cpu.o $(BUILD_HALDIR)/cpu/gdt.o $(BUILD_HALDIR)/cpu/idt.o $(BUILD_HALDIR)/cpu/exceptions.o $(BUILD_HALDIR)/irq.o $(BUILD_HALDIR)/swints.o $(BUILD_HALDIR)/chips/pic-i8259.o $(BUILD_HALDIR)/chips/pit-i8253.o $(LIBFILE) $(KERNELFILE)
+OBJECTS = $(BUILD_HALDIR)/init.o $(BUILD_HALDIR)/hal.o $(BUILD_HALDIR)/textmode.o $(BUILD_HALDIR)/cpu/cpu.o $(BUILD_HALDIR)/cpu/gdt.o $(BUILD_HALDIR)/cpu/idt.o $(BUILD_HALDIR)/cpu/exceptions.o $(BUILD_HALDIR)/irq.o $(BUILD_HALDIR)/swints.o $(BUILD_HALDIR)/chips/pic-i8259.o $(BUILD_HALDIR)/chips/pit-i8253.o $(BUILD_HALDIR)/memory/phys_mm.o $(LIBFILE) $(KERNELFILE)
 # 
 
 all: build_hal build_lib build_kernel link

@@ -9,11 +9,11 @@
 //	Date: January 6th 2017
 //
 /*************************************************************************************************/
-#include <hal.h>
-#include <cpu\cpu.h>
-#include <cpu\gdt.h>
-
 #include <stdint.h>
+
+#include <hal.h>
+#include <cpu/cpu.h>
+#include <cpu/gdt.h>
 
 /*==============================================================================================*/
 // Structures/Enumerations (Private)

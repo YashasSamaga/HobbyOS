@@ -12,10 +12,10 @@
 #include <stdint.h>
 
 #include <hal.h>
-#include <chips\pic-i8259.h>
-#include <cpu\cpu.h>
-#include <cpu\idt.h>
-#include <cpu\gdt.h>
+#include <chips/pic-i8259.h>
+#include <cpu/cpu.h>
+#include <cpu/idt.h>
+#include <cpu/gdt.h>
 
 /*==============================================================================================*/
 // Implementation External Function Prototypes

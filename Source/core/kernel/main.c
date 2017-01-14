@@ -7,12 +7,14 @@
 /******************************************************************************/
 #define ARCH_X86
 
-#include "hal.h"
+#include <hal.h>
 
 int kernel_init() //called from the hardware abstraction layer
 {
 	setattribute(1, 3);
 	clrscr();	
+	gotoxy(0, 0);
+	
 	printf("Hi");
 	for(;;);
 }
