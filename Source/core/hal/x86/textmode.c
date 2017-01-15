@@ -77,7 +77,7 @@ static void init_textmode()
 *************************************************************************************************/
 static void updatecursor()
 {
-	unsigned int temp = curPos_y * TEXTMODE_MAX_X + curPos_x;
+	uint16_t temp = curPos_y * TEXTMODE_MAX_X + curPos_x;
 
     outportb(0x3D4, 0xE);
     outportb(0x3D5, temp >> 8);
@@ -136,12 +136,11 @@ static void putc(unsigned char c)
     if(curPos_y >= TEXTMODE_MAX_Y)
     {
 		uint16_t blank = 0x20 | (attribute << 8);
-        unsigned int temp = curPos_y - TEXTMODE_MAX_Y + 1;
+        uint16_t temp = curPos_y - TEXTMODE_MAX_Y + 1;
         memcpy (vmemptr, vmemptr + temp * TEXTMODE_MAX_X, (TEXTMODE_MAX_Y - temp) * TEXTMODE_MAX_X * 2);
         memsetw (vmemptr + (TEXTMODE_MAX_Y - temp) * TEXTMODE_MAX_X, blank, TEXTMODE_MAX_X);
         curPos_y = TEXTMODE_MAX_Y - 1;
     }
-	updatecursor();
 }
 
 /*==============================================================================================*/
@@ -214,6 +213,8 @@ void puts (char *str)
 
 	for (size_t i = 0, len = strlen (str); i < len; i++)
 		putc(str[i]);
+
+	updatecursor();
 }
 
 /*************************************************************************************************
@@ -329,6 +330,7 @@ int printf (const char *str, ...)
 				break;
 		}
 	}
+	updatecursor();
 	va_end (args);
 	return 1;
 }

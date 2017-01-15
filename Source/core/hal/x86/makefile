@@ -4,14 +4,13 @@
 # HAL Make Configuration
 include hal/make.config
 
-# HAL source files
-#HAL_CSOURCES = $(wildcard cpu/*.c) $(wildcard *.c) $(wildcard chips/*.c)
-#HAL_COBJECTS = $(patsubst %.c, %.o, $(HAL_CSOURCES))
+# HAL source and object files
+HAL_CSOURCES = $(wildcard $(HALDIR)/*.c $(HALDIR)/cpu/*.c $(HALDIR)/memory/*.c $(HALDIR)/chips/*.c)
+HAL_COBJECTS = $(addprefix $(BUILDDIR)/, $(patsubst %.c, %.o, $(HAL_CSOURCES)))
 
-HAL_CSOURCES = $(HALDIR)/hal.c $(HALDIR)/textmode.c $(HALDIR)/cpu/cpu.c $(HALDIR)/cpu/gdt.c $(HALDIR)/cpu/idt.c $(HALDIR)/cpu/exceptions.c $(HALDIR)/irq.c $(HALDIR)/chips/pic-i8259.c $(HALDIR)/chips/pit-i8253.c $(HALDIR)/swints.c $(HALDIR)/memory/phys_mm.c 
-HAL_COBJECTS = $(BUILD_HALDIR)/hal.o $(BUILD_HALDIR)/textmode.o $(BUILD_HALDIR)/cpu/cpu.o $(BUILD_HALDIR)/cpu/gdt.o $(BUILD_HALDIR)/cpu/idt.o $(BUILD_HALDIR)/cpu/exceptions.o $(BUILD_HALDIR)/irq.o $(BUILD_HALDIR)/chips/pic-i8259.o $(BUILD_HALDIR)/chips/pit-i8253.o $(BUILD_HALDIR)/swints.o $(BUILD_HALDIR)/memory/phys_mm.o 
-HAL_ASMSOURCES = $(HALDIR)/init.asm
-HAL_ASMOBJECTS = $(BUILD_HALDIR)/init.o
+HAL_ASMSOURCES = $(wildcard $(HALDIR)/*.asm)
+HAL_ASMOBJECTS = $(addprefix $(BUILDDIR)/, $(patsubst %.asm, %.o, $(HAL_ASMSOURCES)))
+
 HAL_OBJECTS = $(HAL_ASMOBJECTS) $(HAL_COBJECTS)
 
 # define the compiler, assembler and archiver to use
@@ -19,15 +18,20 @@ CC = gcc
 ASMA = nasm
 AR = ar
 
-# define compiler, assembler and linker flags
-CFLAGS = -Wall -Wextra -std=c99 -m32 -O -ffreestanding -fstrength-reduce -fomit-frame-pointer -finline-functions -nostdinc -fno-builtin 
-ASMFLAGS = -f aout
+# -Wall -Wextra -Werror => Enable all warnings and consider warnings as errors
+# -O1,O2,O3 => O3 highest optimization level (we target for O3)
+# -Og => generate debug code
+# -fno-asm => asm, inline, typeof keywords are NOT recognized; however, __asm__, __inline__ and __typeof__ are recognized
+# -ffreestanding => implies -fno-builtin; assumes the target is being built for a non hosted environment; __builtin_ functions are still usable
+# -nostdinc, -nostdlib => tell GCC not to use default libraries and includes
+CFLAGS = -Wall -Wextra -Werror -std=c99 -fno-asm -ffreestanding -nostdinc -nostdlib -O1 $(HALARCH_CFLAG)
+ASMFLAGS = -f $(HALARCH_ASMFLAG)
 ARFLAGS = rvs
 
 # define directories containing header files
 INCLUDES = -I./$(HALDIR)/include -I./include
 
-.PHONY: all clean
+.PHONY: all archive clean
 
 all: $(HAL_OBJECTS) archive
 
@@ -41,4 +45,4 @@ archive:
 	$(AR) $(ARFLAGS) $(HALFILE) $(HAL_OBJECTS)
  
 clean:
-#TODO
+	rm $(HAL_OBJECTS)
