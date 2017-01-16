@@ -39,7 +39,7 @@
 /*==============================================================================================*/
 uint64_t tick = 0;
 
-int pit_irq_handler(struct IRQ_DETAILS *details)
+int pit_irq_handler(struct IRQ_DETAILS *details __attribute__((unused)))
 {
 	tick++;
 	return 0;
