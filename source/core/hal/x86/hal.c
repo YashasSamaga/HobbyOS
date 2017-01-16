@@ -80,7 +80,8 @@ int hal_shutdown()
 *************************************************************************************************/
 void hal_initialize(struct bootInfo_t *bootInfo) 
 {	
-	void* used_upto = pmm_init(bootInfo->memoryLow + bootInfo->memoryHigh_KB*64 + 1024, (void*)(bootInfo->load_addr + bootInfo->imageSize));
+	//void* used_upto = 
+	pmm_init(bootInfo->memoryLow + bootInfo->memoryHigh_KB*64 + 1024, (void*)(bootInfo->load_addr + bootInfo->imageSize));
 	
 	struct memory_map_entry* memory_map = (struct memory_map_entry*)bootInfo->mmap_addr;
 	for (uint32_t i = 0; i < bootInfo->mmap_entries; i++) 
