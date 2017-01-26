@@ -9,14 +9,6 @@ compiler:
 script:
 - cd source
 - cd core
-- mkdir build
-- mkdir build/hal
-- mkdir build/lib
-- mkdir build/kernel
-- mkdir build/hal/x86/
-- mkdir build/hal/x86/cpu
-- mkdir build/hal/x86/chips
-- mkdir build/hal/x86/memory
 - chmod -R 777 build
 - make
 
