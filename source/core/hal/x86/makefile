@@ -16,7 +16,7 @@ HAL_OBJECTS = $(HAL_ASMOBJECTS) $(HAL_COBJECTS)
 # define the compiler, assembler and archiver to use
 CC = gcc
 ASMA = nasm
-AR = /opt/cross/i386-aout/bin/ar
+AR = ar
 
 # -Wall -Wextra -Werror => Enable all warnings and consider warnings as errors
 # -O1,O2,O3 => O3 highest optimization level (we target for O3)
