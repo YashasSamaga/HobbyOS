@@ -31,7 +31,7 @@ jmp	main
 ; 0xA0000 	0xFFFFF		384 KB			- Video Memory, ROM Area
 
 %define MEMORY_MAP_BASE 0x2000		
-%define IMAGE_PMODE_BASE 0x100000 ; protected mode location
+%define IMAGE_PMODE_BASE 0x1000000 ; protected mode location - 16MB
 %define IMAGE_RMODE_BASE 0x07E00 ; real mode location (temporary)
 
 ;*****************************************************************************
@@ -46,17 +46,21 @@ msgAwaitKeypress 		DB 0x0D, "Press any key to restart.", 0x0A, 0x00
 
 struc bootInfo_t
 	.memoryLow			resd	1
-	.memoryHigh			resd	1
+	.memoryHigh_KB			resd	1
 	.mmap_addr			resd	1
 	.mmap_entries		resd	1
+	.imageSize			resd 	1
+	.load_addr			resd 	1
 endstruc	
 
 bootInfo:
 istruc bootInfo_t
 	at bootInfo_t.memoryLow,			DD 0
-	at bootInfo_t.memoryHigh,			DD 0
+	at bootInfo_t.memoryHigh_KB,			DD 0
 	at bootInfo_t.mmap_addr,			DD MEMORY_MAP_BASE
 	at bootInfo_t.mmap_entries,			DD 0
+	at bootInfo_t.imageSize,			DD 0	
+	at bootInfo_t.load_addr,			DD 0
 iend
 
 ;*****************************************************************************
@@ -124,7 +128,7 @@ main:
 	xor	ebx, ebx
 	call BiosGetMemorySize
 	
-	mov	WORD [bootInfo + bootInfo_t.memoryHigh], bx
+	mov	WORD [bootInfo + bootInfo_t.memoryHigh_KB], bx
 	mov	WORD [bootInfo + bootInfo_t.memoryLow], ax
 
 	mov	eax, 0x0
@@ -177,9 +181,11 @@ Stage3:
 	mov	es, ax
 	mov	esp, 0x7FFFF
 
+	mov 	edx, 0
   	mov		eax, DWORD [ImageSize]
   	movzx	ebx, WORD [bpbBytesPerSector]
   	mul		ebx
+	mov DWORD [bootInfo + bootInfo_t.imageSize], eax
   	mov		ebx, 4
   	div		ebx
    	cld
@@ -188,6 +194,9 @@ Stage3:
    	mov	ecx, eax
    	repe	movsd
 
+	mov eax, IMAGE_PMODE_BASE
+	mov DWORD [bootInfo + bootInfo_t.load_addr], eax
+	
 	push	DWORD bootInfo
 	jmp	CODE_DESC:IMAGE_PMODE_BASE
 

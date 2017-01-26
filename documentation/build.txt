@@ -1,0 +1,7 @@
+The bootsector and bootloader do NOT have makefiles. 
+* Assembling 'bootsec.asm' will output the bootsector in binary.
+* Assembling 'BTLSTG2.asm' will output the stage 2 bootloader in binary.
+
+The core has a makefile in its root directory. The 'lib', 'hal' and the 'kernel' folder have a make configuration file named 'make.config'. The aforementioned folders also have their own makefile.
+
+However, to build the core, the makefile in the root directory must be executed. This makefile will automatically execute the makefiles in the sub directories.
