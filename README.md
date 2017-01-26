@@ -1,7 +1,7 @@
 # LindusOS
 
-[![Build Status](https://travis-ci.org/YashasSamaga/LindusOS.svg?branch=master)](https://travis-ci.org/YashasSamaga/LindusOS)
-
+[![Travis Build Status](https://travis-ci.org/YashasSamaga/LindusOS.svg?branch=master)](https://travis-ci.org/YashasSamaga/LindusOS)
+[![Coverity Scan Build Status](https://scan.coverity.com/projects/11586/badge.svg)](https://scan.coverity.com/projects/lindusos)
 
 ##Source Tree
  
